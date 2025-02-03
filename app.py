@@ -267,34 +267,25 @@ def main():
             
             # 精算書用のカラム設定
             expense_column_config = {
-                '日付': st.column_config.TextColumn(
-                    width='small',
-                    default=""
+                '日付': st.column_config.Column(
+                    width='small'
                 ),
-                '経路': st.column_config.TextColumn(
-                    width='large',
-                    default=""
+                '経路': st.column_config.Column(
+                    width='large'
                 ),
                 '合計距離(km)': st.column_config.NumberColumn(
                     width='small',
                     format="%.1f",
-                    default="",
                     help="移動距離の合計"
                 ),
-                '交通費（距離×15P）(円)': st.column_config.TextColumn(
-                    width='medium',
-                    default="",
-                    align="right"
+                '交通費（距離×15P）(円)': st.column_config.Column(
+                    width='medium'
                 ),
-                '運転手当(円)': st.column_config.TextColumn(
-                    width='small',
-                    default="",
-                    align="right"
+                '運転手当(円)': st.column_config.Column(
+                    width='small'
                 ),
-                '合計(円)': st.column_config.TextColumn(
-                    width='small',
-                    default="",
-                    align="right"
+                '合計(円)': st.column_config.Column(
+                    width='small'
                 )
             }
             
@@ -318,9 +309,9 @@ def main():
                             if route == row['routes'][0]:
                                 row_data.update({
                                     '合計距離(km)': row['total_distance'],
-                                    '交通費（距離×15P）(円)': f"{int(row['transportation_fee']):,}",
-                                    '運転手当(円)': f"{int(row['allowance']):,}",
-                                    '合計(円)': f"{int(row['total']):,}"
+                                    '交通費（距離×15P）(円)': f"{int(row['transportation_fee']):>12,}",
+                                    '運転手当(円)': f"{int(row['allowance']):>8,}",
+                                    '合計(円)': f"{int(row['total']):>8,}"
                                 })
                             else:
                                 row_data.update({
@@ -342,7 +333,7 @@ def main():
                         '合計距離(km)': '',
                         '交通費（距離×15P）(円)': '',
                         '運転手当(円)': '',
-                        '合計(円)': f"{total_amount:,}"
+                        '合計(円)': f"{total_amount:>8,}"
                     }])
                     display_df = pd.concat([display_df, totals])
                     
