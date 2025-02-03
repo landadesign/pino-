@@ -101,67 +101,44 @@ def parse_expense_data(text):
         # テキストの前処理
         lines = [line.strip() for line in text.split('\n') if line.strip()]
         data = []
-        current_name = None
         daily_routes = {}
         
         # 各行を解析
         for line in lines:
             # 【ピノ】形式のデータを解析
             if '【ピノ】' in line:
-                # パターン1: 【ピノ】名前 日付(曜日) 経路 距離km
-                pino_match = re.match(r'【ピノ】\s*([^\s]+)\s+(\d+/\d+)\s*\([月火水木金土日]\)\s*(.+?)(\d+\.?\d*)\s*(?:km|㎞|ｋｍ|kｍ)', line)
+                # パターン: 【ピノ】名前 日付(曜日) 経路
+                pino_match = re.match(r'【ピノ】\s*([^\s]+)\s+(\d+/\d+)\s*\(.\)\s*(.+)', line)
                 if pino_match:
-                    name, date, route, distance = pino_match.groups()
-                    route = route.strip()
-                    try:
-                        distance = float(distance)
-                    except ValueError:
-                        continue
+                    name = pino_match.group(1).replace('様', '')
+                    date = pino_match.group(2)
+                    route = pino_match.group(3).strip()
+                    
+                    # 経路からポイント数を計算
+                    route_points = route.split('→')
+                    distance = (len(route_points) - 1) * 5.0
                     
                     if name not in daily_routes:
                         daily_routes[name] = {}
                     if date not in daily_routes[name]:
                         daily_routes[name][date] = []
-                        
-                    daily_routes[name][date].append({
-                        'route': route,
-                        'distance': distance
-                    })
-                    continue
-            
-            # 通常形式のデータを解析
-            name_match = re.match(r'(.+?)様', line)
-            if name_match:
-                current_name = name_match.group(1).strip()
-                continue
-            
-            # 日付と経路の解析
-            date_match = re.match(r'(\d+/\d+|\d+月\d+日)', line)
-            if current_name and date_match:
-                date = date_match.group(1)
-                if '月' in date:  # 日付形式の正規化
-                    date = date.replace('月', '/').replace('日', '')
-                
-                # 経路部分の抽出
-                route_part = line[date_match.end():].strip()
-                if route_part:
-                    # 経路からポイント数を計算
-                    route_points = route_part.split('→')
-                    distance = (len(route_points) - 1) * 5.0
                     
-                    if current_name not in daily_routes:
-                        daily_routes[current_name] = {}
-                    if date not in daily_routes[current_name]:
-                        daily_routes[current_name][date] = []
-                        
-                    daily_routes[current_name][date].append({
-                        'route': route_part,
-                        'distance': distance
-                    })
+                    # 重複チェック
+                    route_exists = False
+                    for existing_route in daily_routes[name][date]:
+                        if existing_route['route'] == route:
+                            route_exists = True
+                            break
+                    
+                    if not route_exists:
+                        daily_routes[name][date].append({
+                            'route': route,
+                            'distance': distance
+                        })
         
         # 日付ごとのデータを集計
         for name, dates in daily_routes.items():
-            for date, routes in dates.items():
+            for date, routes in sorted(dates.items(), key=lambda x: tuple(map(int, x[0].split('/')))):
                 # 同じ日の距離を合算
                 total_distance = sum(route['distance'] for route in routes)
                 transportation_fee = int(total_distance * RATE_PER_KM)  # 切り捨て
@@ -177,17 +154,19 @@ def parse_expense_data(text):
                 })
         
         if data:
-            # データをDataFrameに変換し、日付でソート
+            # データをDataFrameに変換
             df = pd.DataFrame(data)
             
-            # 日付を数値化してソート用に使用
-            def date_to_sortable(date_str):
-                month, day = map(int, date_str.split('/'))
-                return month * 100 + day
-            
-            df['date_sort'] = df['date'].apply(date_to_sortable)
+            # 日付でソート
+            df['date_sort'] = df['date'].apply(lambda x: tuple(map(int, x.split('/'))))
             df = df.sort_values(['name', 'date_sort'])
             df = df.drop('date_sort', axis=1)
+            
+            # デバッグ情報
+            st.write("解析されたデータ件数:", len(df))
+            st.write("ユニークな名前:", df['name'].unique())
+            st.write("日付の範囲:", df['date'].min(), "から", df['date'].max())
+            
             return df
         
         st.error("データが見つかりませんでした。正しい形式で入力してください。")
@@ -195,6 +174,7 @@ def parse_expense_data(text):
         
     except Exception as e:
         st.error(f"エラーが発生しました: {str(e)}")
+        st.write("問題のある行:", line)  # エラーが発生した行を表示
         return None
 
 def main():
