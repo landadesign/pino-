@@ -347,51 +347,33 @@ def main():
                     display_rows = []
                     
                     for _, row in person_data.iterrows():
-                        route_text = row.get('route', '')
-                        distance = ''
+                        routes = row['routes']
                         
-                        # 経路と距離を分離
-                        if '\n' in route_text:
-                            # 改行がある場合
-                            lines = route_text.split('\n')
-                            last_line = lines[-1].strip()
+                        for route in routes:
+                            route_text = route['route']
+                            distance = route.get('distance')
                             
-                            # 距離の抽出（km、ｋｍ、㎞のいずれかで終わる場合）
-                            if any(last_line.endswith(unit) for unit in ['km', 'ｋｍ', '㎞']):
-                                try:
-                                    for unit in ['km', 'ｋｍ', '㎞']:
-                                        if last_line.endswith(unit):
-                                            distance = float(last_line.replace(unit, '').strip())
-                                            route_text = '\n'.join(lines[:-1]).strip()
-                                            break
-                                except ValueError:
-                                    pass
-                        else:
-                            # 改行がない場合
-                            for unit in ['km', 'ｋｍ', '㎞']:
-                                if unit in route_text:
-                                    parts = route_text.rsplit(unit, 1)[0].split()
-                                    try:
-                                        distance = float(parts[-1])
-                                        route_text = ' '.join(parts[:-1])
-                                        break
-                                    except (ValueError, IndexError):
-                                        continue
-                        
-                        if not distance:
-                            st.error(f"エラー: {row.get('date', '')}の経路の距離データが見つかりません。\n{route_text}")
-                            return
-                        
-                        # 行データの作成
-                        row_data = {
-                            '日付': row.get('date', ''),
-                            '経路': route_text,
-                            '合計\n距離\n(km)': distance,
-                            '交通費\n(距離×15P)\n(円)': f"{int(distance * 15):>8,}" if distance else '',
-                            '運転\n手当\n(円)': f"{200:>6,}" if distance else '',
-                            '合計\n(円)': f"{int(distance * 15 + 200):>6,}" if distance else ''
-                        }
-                        display_rows.append(row_data)
+                            # 距離のバリデーション
+                            if distance is None or distance <= 0:
+                                st.error(f"""
+                                    エラー: 距離データの読み取りに失敗しました。
+                                    日付: {row.get('date', '')}
+                                    名前: {row.get('name', '')}
+                                    経路: {route_text}
+                                    距離: {distance}
+                                """)
+                                return
+                            
+                            # 行データの作成
+                            row_data = {
+                                '日付': row.get('date', ''),
+                                '経路': route_text,
+                                '合計\n距離\n(km)': distance,
+                                '交通費\n(距離×15P)\n(円)': f"{int(distance * 15):>8,}",
+                                '運転\n手当\n(円)': f"{200:>6,}",
+                                '合計\n(円)': f"{int(distance * 15 + 200):>6,}"
+                            }
+                            display_rows.append(row_data)
                     
                     # DataFrameの作成
                     display_df = pd.DataFrame(display_rows)
