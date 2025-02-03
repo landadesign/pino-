@@ -298,8 +298,25 @@ def main():
                     
                     # データ表示用のリストを作成
                     display_rows = []
+                    current_date = None
+                    daily_distance = 0
+                    
                     for _, row in person_data.iterrows():
-                        for route in row['routes']:
+                        # 日付が変わったら、前日の小計を追加
+                        if current_date is not None and current_date != row['date']:
+                            display_rows.append({
+                                '日付': current_date,
+                                '経路': f"【1日の合計距離: {daily_distance:.1f}km】",
+                                '合計距離(km)': None,
+                                '交通費（距離×15P）(円)': '',
+                                '運転手当(円)': '',
+                                '合計(円)': ''
+                            })
+                            daily_distance = 0
+                        
+                        current_date = row['date']
+                        
+                        for idx, route in enumerate(row['routes']):
                             # 経路を2段に分割
                             route_text = route['route']
                             if len(route_text) > 35:
@@ -319,18 +336,14 @@ def main():
                                 
                                 if current_line:
                                     new_text.append(current_line.strip())
-                                    current_line = '→' + part
-                                else:
-                                    current_line = part
-                                
-                                if current_line:
-                                    new_text.append(current_line.strip())
-                                    current_line = part
-                                
                                 route_text = '\n'.join(new_text)
                             
+                            # 各経路の距離を表示
+                            route_distance = route['distance']
+                            daily_distance += route_distance
+                            
                             # 数値を見やすく整形
-                            if route == row['routes'][0]:
+                            if idx == 0:  # 1日の最初の経路
                                 distance = row['total_distance']
                                 transportation_fee = f"{int(row['transportation_fee']):,}"
                                 allowance = f"{int(row['allowance']):,}"
@@ -343,13 +356,24 @@ def main():
                             
                             row_data = {
                                 '日付': row['date'],
-                                '経路': route_text,
+                                '経路': f"{route_text} ({route_distance:.1f}km)",
                                 '合計距離(km)': distance if distance != '' else None,
                                 '交通費（距離×15P）(円)': transportation_fee,
                                 '運転手当(円)': allowance,
                                 '合計(円)': total
                             }
                             display_rows.append(row_data)
+                    
+                    # 最後の日の小計を追加
+                    if current_date is not None:
+                        display_rows.append({
+                            '日付': current_date,
+                            '経路': f"【1日の合計距離: {daily_distance:.1f}km】",
+                            '合計距離(km)': None,
+                            '交通費（距離×15P）(円)': '',
+                            '運転手当(円)': '',
+                            '合計(円)': ''
+                        })
                     
                     # DataFrameの作成
                     display_df = pd.DataFrame(display_rows)
