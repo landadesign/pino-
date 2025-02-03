@@ -347,13 +347,24 @@ def main():
                                     route_text = f"{route_text} ({route['distance']:.1f}km)"
                             
                             # 数値データを準備（最初の経路のみ値を設定）
+                            if idx == 0:
+                                distance = row['total_distance']
+                                trans_fee = str(int(row['transportation_fee'])).rjust(8)
+                                allowance = str(int(row['allowance'])).rjust(6)
+                                total = str(int(row['total'])).rjust(6)
+                            else:
+                                distance = ""
+                                trans_fee = ""
+                                allowance = ""
+                                total = ""
+                            
                             row_data = {
                                 '日付': row['date'],
                                 '経路': route_text,
-                                '合計\n距離\n(km)': row['total_distance'] if idx == 0 else '',
-                                '交通費\n(距離×15P)\n(円)': int(row['transportation_fee']) if idx == 0 else '',
-                                '運転\n手当\n(円)': int(row['allowance']) if idx == 0 else '',
-                                '合計\n(円)': int(row['total']) if idx == 0 else ''
+                                '合計\n距離\n(km)': distance,
+                                '交通費\n(距離×15P)\n(円)': trans_fee,
+                                '運転\n手当\n(円)': allowance,
+                                '合計\n(円)': total
                             }
                             display_rows.append(row_data)
                     
@@ -362,9 +373,9 @@ def main():
                     
                     # 合計を計算
                     total_distance = person_data['total_distance'].sum()
-                    total_transportation = int(person_data['transportation_fee'].sum())
-                    total_allowance = int(person_data['allowance'].sum())
-                    total_amount = int(person_data['total'].sum())
+                    total_transportation = str(int(person_data['transportation_fee'].sum())).rjust(8)
+                    total_allowance = str(int(person_data['allowance'].sum())).rjust(6)
+                    total_amount = str(int(person_data['total'].sum())).rjust(6)
                     
                     # 合計行の追加
                     totals = pd.DataFrame([{
@@ -379,11 +390,15 @@ def main():
                     # DataFrameを結合
                     display_df = pd.concat([display_df, totals])
                     
-                    # 数値のフォーマットと中央寄せを適用
+                    # 数値のフォーマットを適用
                     display_df = display_df.style.format({
-                        '交通費\n(距離×15P)\n(円)': lambda x: f"{int(x):^12,}" if x != '' else '',
-                        '運転\n手当\n(円)': lambda x: f"{int(x):^8,}" if x != '' else '',
-                        '合計\n(円)': lambda x: f"{int(x):^8,}" if x != '' else ''
+                        '交通費\n(距離×15P)\n(円)': lambda x: f"{x:>12,}" if x.strip() else "",
+                        '運転\n手当\n(円)': lambda x: f"{x:>8,}" if x.strip() else "",
+                        '合計\n(円)': lambda x: f"{x:>8,}" if x.strip() else ""
+                    }).set_properties(**{
+                        '交通費\n(距離×15P)\n(円)': [{'text-align': 'center'}] * len(display_df),
+                        '運転\n手当\n(円)': [{'text-align': 'center'}] * len(display_df),
+                        '合計\n(円)': [{'text-align': 'center'}] * len(display_df)
                     })
                     
                     # データフレーム表示
