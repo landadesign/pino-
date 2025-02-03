@@ -255,6 +255,15 @@ def main():
             hide_index=True
         )
         
+        # デバッグ用の出力
+        st.write("データの確認:")
+        for _, row in df.iterrows():
+            if row['date'] == '1/31' and row['name'] == '山名夏生':
+                st.write("日付:", row['date'])
+                st.write("名前:", row['name'])
+                st.write("経路データ:", row['routes'])
+                st.write("---")
+        
         # 精算書作成ボタン
         if st.button("精算書を作成"):
             st.session_state['show_expense_report'] = True
