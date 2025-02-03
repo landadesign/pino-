@@ -179,6 +179,9 @@ def parse_expense_data(text):
 def main():
     st.title("PINO精算アプリケーション")
     
+    # ページ幅を最大に設定
+    st.set_page_config(layout="wide")
+    
     # データ入力
     input_text = st.text_area("精算データを貼り付けてください", height=200)
     
@@ -221,11 +224,18 @@ def main():
         list_df = pd.DataFrame(list_data)
         list_df = list_df.sort_values(['担当者', '日付'])
         
+        # カラム幅の設定
+        column_config = {
+            '日付': st.column_config.TextColumn(width='small'),
+            '担当者': st.column_config.TextColumn(width='small'),
+            '経路': st.column_config.TextColumn(width='large'),
+            '距離(km)': st.column_config.NumberColumn(width='small', format="%.1f")
+        }
+        
         # データフレーム表示
         st.dataframe(
-            list_df.style.format({
-                '距離(km)': '{:.1f}'
-            }),
+            list_df,
+            column_config=column_config,
             use_container_width=True,
             hide_index=True
         )
@@ -239,6 +249,16 @@ def main():
             st.markdown("### 担当者別精算書")
             unique_names = df['name'].unique().tolist()
             tabs = st.tabs(unique_names)
+            
+            # 精算書用のカラム設定
+            expense_column_config = {
+                '日付': st.column_config.TextColumn(width='small'),
+                '経路': st.column_config.TextColumn(width='large'),
+                '合計距離(km)': st.column_config.NumberColumn(width='small', format="%.1f"),
+                '交通費（距離×15P）(円)': st.column_config.NumberColumn(width='medium', format="%d"),
+                '運転手当(円)': st.column_config.NumberColumn(width='small', format="%d"),
+                '合計(円)': st.column_config.NumberColumn(width='small', format="%d")
+            }
             
             for i, name in enumerate(unique_names):
                 with tabs[i]:
@@ -277,12 +297,8 @@ def main():
                     
                     # データフレーム表示
                     st.dataframe(
-                        display_df.style.format({
-                            '合計距離(km)': lambda x: f'{float(x):.1f}' if x != '' else '',
-                            '交通費（距離×15P）(円)': lambda x: f'{int(x):,}' if x != '' else '',
-                            '運転手当(円)': lambda x: f'{int(x):,}' if x != '' else '',
-                            '合計(円)': lambda x: f'{int(x):,}' if x != '' else ''
-                        }),
+                        display_df,
+                        column_config=expense_column_config,
                         use_container_width=True,
                         hide_index=True
                     )
