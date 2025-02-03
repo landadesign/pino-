@@ -298,30 +298,11 @@ def main():
                     
                     # データ表示用のリストを作成
                     display_rows = []
-                    current_date = None
-                    daily_routes = []
                     
-                    for idx, row in person_data.iterrows():
-                        # 日付が変わったら、前日の経路を処理
-                        if current_date is not None and current_date != row['date']:
-                            # 2件以上ある場合のみ小計を表示
-                            if len(daily_routes) > 1:
-                                daily_distance = sum(route['distance'] for route in daily_routes)
-                                display_rows.append({
-                                    '日付': current_date,
-                                    '経路': f"【内訳合計: {daily_distance:.1f}km】",
-                                    '合計距離(km)': None,
-                                    '交通費（距離×15P）(円)': '',
-                                    '運転手当(円)': '',
-                                    '合計(円)': ''
-                                })
-                            daily_routes = []
+                    for _, row in person_data.iterrows():
+                        routes = row['routes']
                         
-                        current_date = row['date']
-                        
-                        for route in row['routes']:
-                            daily_routes.append(route)
-                            
+                        for idx, route in enumerate(routes):
                             # 経路を2段に分割
                             route_text = route['route']
                             if len(route_text) > 35:
@@ -343,12 +324,16 @@ def main():
                                     new_text.append(current_line.strip())
                                 route_text = '\n'.join(new_text)
                             
-                            # 同じ日に2件以上ある場合のみ個別距離を表示
-                            if len(row['routes']) > 1:
-                                route_text = f"{route_text} ({route['distance']:.1f}km)"
+                            # 同じ日に2件以上ある場合、距離の内訳を表示
+                            if len(routes) > 1:
+                                if idx == len(routes) - 1:  # 最後の経路の場合
+                                    distances = [f"{r['distance']:.1f}" for r in routes]
+                                    route_text = f"{route_text} ({' + '.join(distances)} = {row['total_distance']:.1f}km)"
+                                else:
+                                    route_text = f"{route_text} ({route['distance']:.1f}km)"
                             
                             # 数値を見やすく整形
-                            if route == row['routes'][0]:
+                            if idx == 0:  # 1日の最初の経路
                                 distance = row['total_distance']
                                 transportation_fee = f"{int(row['transportation_fee']):,}"
                                 allowance = f"{int(row['allowance']):,}"
@@ -362,24 +347,12 @@ def main():
                             row_data = {
                                 '日付': row['date'],
                                 '経路': route_text,
-                                '合計距離(km)': distance if distance != '' else None,
+                                '合計距離(km)': distance if distance != '' else '',
                                 '交通費（距離×15P）(円)': transportation_fee,
                                 '運転手当(円)': allowance,
                                 '合計(円)': total
                             }
                             display_rows.append(row_data)
-                    
-                    # 最後の日の処理
-                    if current_date is not None and len(daily_routes) > 1:
-                        daily_distance = sum(route['distance'] for route in daily_routes)
-                        display_rows.append({
-                            '日付': current_date,
-                            '経路': f"【内訳合計: {daily_distance:.1f}km】",
-                            '合計距離(km)': None,
-                            '交通費（距離×15P）(円)': '',
-                            '運転手当(円)': '',
-                            '合計(円)': ''
-                        })
                     
                     # DataFrameの作成
                     display_df = pd.DataFrame(display_rows)
@@ -405,7 +378,7 @@ def main():
                     
                     # Noneと空文字の処理
                     display_df = display_df.fillna('')
-                    display_df = display_df.replace('None', '')
+                    display_df = display_df.replace({None: '', 'None': '', float('nan'): ''})
                     
                     # データフレーム表示
                     st.dataframe(
