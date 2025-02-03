@@ -134,6 +134,8 @@ def parse_expense_data(text):
             if current_name and len(line.split()) >= 2:
                 parts = line.split()
                 date = parts[0]
+                if '月' in date:  # 日付形式の正規化
+                    date = date.replace('月', '/').replace('日', '')
                 route = ' '.join(parts[1:])
                 
                 # 経路からポイント数を計算
@@ -170,9 +172,15 @@ def parse_expense_data(text):
         if data:
             # データをDataFrameに変換し、日付でソート
             df = pd.DataFrame(data)
-            df['date_for_sort'] = pd.to_datetime(df['date'].apply(lambda x: f'2024/{x}'))
-            df = df.sort_values(['name', 'date_for_sort'])
-            df = df.drop('date_for_sort', axis=1)
+            
+            # 日付を数値化してソート用に使用
+            def date_to_sortable(date_str):
+                month, day = map(int, date_str.replace('月', '/').replace('日', '').split('/'))
+                return month * 100 + day
+            
+            df['date_sort'] = df['date'].apply(date_to_sortable)
+            df = df.sort_values(['name', 'date_sort'])
+            df = df.drop('date_sort', axis=1)
             return df
         
         st.error("データが見つかりませんでした。正しい形式で入力してください。")
