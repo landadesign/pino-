@@ -343,14 +343,16 @@ def main():
                 with tabs[i]:
                     person_data = df[df['name'] == name].sort_values('date').copy()
                     
-                    # デバッグ情報の表示
-                    st.write("データ確認:")
+                    # デバッグ出力
+                    st.write("=== データ読み取りの確認 ===")
                     for _, row in person_data.iterrows():
-                        st.write(f"日付: {row['date']}")
-                        st.write(f"経路データ: {row['routes']}")
-                        st.write("---")
+                        st.write(f"日付: {row.get('date', '')}")
+                        st.write(f"名前: {row.get('name', '')}")
+                        for route in row['routes']:
+                            st.write("元の経路テキスト:")
+                            st.code(route['route'])  # 改行を含む生のテキストを表示
+                            st.write("---")
                     
-                    # データ表示用のリストを作成
                     display_rows = []
                     
                     for _, row in person_data.iterrows():
@@ -369,35 +371,30 @@ def main():
                                         try:
                                             dist_value = last_line.replace(unit, '').strip()
                                             distance = float(dist_value)
-                                            route_text = lines[0].strip()  # 最初の行を経路として使用
-                                            route['route'] = route_text    # 経路を更新
-                                            route['distance'] = distance   # 距離を更新
+                                            route_text = lines[0].strip()
                                             break
                                         except ValueError:
                                             continue
                             
-                            # 距離が見つからない場合は既存の距離を使用
-                            if not distance and route.get('distance'):
-                                distance = route['distance']
-                            
-                            # 距離が存在しない場合はエラー
                             if not distance:
                                 st.error(f"""
                                     エラー: 距離データが見つかりません。
                                     日付: {row.get('date', '')}
                                     名前: {row.get('name', '')}
                                     経路: {route_text}
+                                    元のテキスト:
+                                    {route['route']}
                                 """)
                                 return
                             
-                            # 行データの作成
+                            # 行データの作成（空の値は空文字列として設定）
                             row_data = {
                                 '日付': row.get('date', ''),
                                 '経路': route_text,
-                                '合計\n距離\n(km)': distance,
-                                '交通費\n(距離×15P)\n(円)': f"{int(distance * 15):>8,}",
-                                '運転\n手当\n(円)': f"{200:>6,}",
-                                '合計\n(円)': f"{int(distance * 15 + 200):>6,}"
+                                '合計\n距離\n(km)': distance if distance else '',
+                                '交通費\n(距離×15P)\n(円)': f"{int(distance * 15):>8,}" if distance else '',
+                                '運転\n手当\n(円)': f"{200:>6,}" if distance else '',
+                                '合計\n(円)': f"{int(distance * 15 + 200):>6,}" if distance else ''
                             }
                             display_rows.append(row_data)
                     
