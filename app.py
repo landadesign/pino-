@@ -332,73 +332,61 @@ def main():
             
             for i, name in enumerate(unique_names):
                 with tabs[i]:
-                    # 担当者ごとのデータを取得し、日付でソート
+                    # データを日付でソート
                     person_data = df[df['name'] == name].sort_values('date').copy()
-                    
-                    st.markdown(f"""
-                        <h4 style='margin: 20px 0; color: #333;'>
-                            {name}様　2025年1月　交通費清算額
-                        </h4>
-                    """, unsafe_allow_html=True)
                     
                     # データ表示用のリストを作成
                     display_rows = []
-                    current_date = None
-                    current_routes = []
                     
-                    # 日付ごとにデータをグループ化して処理
                     for _, row in person_data.iterrows():
-                        if current_date != row['date']:
-                            # 新しい日付の場合、前の日付のデータを処理
-                            if current_routes:
-                                # 合計距離と料金を計算
-                                total_distance = sum(r['distance'] for r in current_routes)
-                                trans_fee = int(total_distance * 15)
-                                allowance = 200
-                                total = trans_fee + allowance
-                                
-                                # 経路を結合
-                                route_text = "\n".join([r['route'] for r in current_routes])
-                                if len(current_routes) > 1:
-                                    distances = [f"{r['distance']:.1f}" for r in current_routes]
-                                    route_text += f" ({' + '.join(distances)} = {total_distance:.1f}km)"
-                                
-                                display_rows.append({
-                                    '日付': current_date,
-                                    '経路': route_text,
-                                    '合計\n距離\n(km)': total_distance,
-                                    '交通費\n(距離×15P)\n(円)': f"{trans_fee:>8,}",
-                                    '運転\n手当\n(円)': f"{allowance:>6,}",
-                                    '合計\n(円)': f"{total:>6,}"
-                                })
+                        routes = row['routes']
+                        total_distance = row['total_distance']
+                        
+                        # 経路テキストの処理
+                        route_texts = []
+                        for route in routes:
+                            route_text = route['route']
+                            distance = route['distance']
                             
-                            # 新しい日付の処理を開始
-                            current_date = row['date']
-                            current_routes = row['routes']
-                        else:
-                            # 同じ日付の場合、経路を追加
-                            current_routes.extend(row['routes'])
-                    
-                    # 最後の日付のデータを処理
-                    if current_routes:
-                        total_distance = sum(r['distance'] for r in current_routes)
-                        trans_fee = int(total_distance * 15)
-                        allowance = 200
-                        total = trans_fee + allowance
+                            # 経路が長い場合は改行して表示
+                            if len(route_text) > 35:
+                                parts = route_text.split('→')
+                                new_text = []
+                                current_line = ''
+                                
+                                for part in parts:
+                                    if current_line and len(current_line) + len(part) + 1 > 35:
+                                        new_text.append(current_line.strip())
+                                        current_line = '→' + part
+                                    else:
+                                        current_line = (current_line + '→' + part) if current_line else part
+                                
+                                if current_line:
+                                    new_text.append(current_line.strip())
+                                route_text = '\n'.join(new_text)
+                            
+                            # 距離を追加
+                            route_text = f"{route_text} ({distance:.1f}km)"
+                            route_texts.append(route_text)
                         
-                        route_text = "\n".join([r['route'] for r in current_routes])
-                        if len(current_routes) > 1:
-                            distances = [f"{r['distance']:.1f}" for r in current_routes]
-                            route_text += f" ({' + '.join(distances)} = {total_distance:.1f}km)"
+                        # 複数経路の場合、合計を表示
+                        if len(routes) > 1:
+                            distances = [f"{r['distance']:.1f}" for r in routes]
+                            route_texts.append(f"合計: {' + '.join(distances)} = {total_distance:.1f}km")
                         
-                        display_rows.append({
-                            '日付': current_date,
-                            '経路': route_text,
+                        # 経路を結合
+                        final_route_text = '\n'.join(route_texts)
+                        
+                        # 行データの作成
+                        row_data = {
+                            '日付': row['date'],
+                            '経路': final_route_text,
                             '合計\n距離\n(km)': total_distance,
-                            '交通費\n(距離×15P)\n(円)': f"{trans_fee:>8,}",
-                            '運転\n手当\n(円)': f"{allowance:>6,}",
-                            '合計\n(円)': f"{total:>6,}"
-                        })
+                            '交通費\n(距離×15P)\n(円)': f"{int(row['transportation_fee']):>8,}",
+                            '運転\n手当\n(円)': f"{int(row['allowance']):>6,}",
+                            '合計\n(円)': f"{int(row['total']):>6,}"
+                        }
+                        display_rows.append(row_data)
                     
                     # DataFrameの作成
                     display_df = pd.DataFrame(display_rows)
@@ -422,7 +410,7 @@ def main():
                     # DataFrameを結合
                     display_df = pd.concat([display_df, totals])
                     
-                    # Noneと空文字の処理
+                    # 空文字の処理
                     display_df = display_df.fillna('')
                     
                     # データフレーム表示
