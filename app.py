@@ -358,26 +358,38 @@ def main():
                         
                         for route in routes:
                             route_text = route['route']
-                            distance = ''
+                            stored_distance = route.get('distance', '')
                             
-                            # 2行に分かれた距離データの検出
+                            # 経路テキストから距離を抽出
                             lines = route_text.split('\n')
+                            extracted_distance = None
+                            
                             if len(lines) > 1:
-                                # 最後の行が距離データかチェック
                                 last_line = lines[-1].strip()
-                                try:
-                                    # 数値とkm（またはｋｍ、㎞）を分離
-                                    for unit in ['km', 'ｋｍ', '㎞']:
-                                        if unit in last_line:
+                                for unit in ['km', 'ｋｍ', '㎞']:
+                                    if unit in last_line:
+                                        try:
                                             dist_value = last_line.replace(unit, '').strip()
-                                            distance = float(dist_value)
+                                            extracted_distance = float(dist_value)
                                             route_text = '\n'.join(lines[:-1]).strip()
                                             break
-                                except ValueError:
-                                    pass
+                                        except ValueError:
+                                            continue
                             
-                            # 距離が検出できない場合はエラー
-                            if not distance:
+                            # 距離の検証
+                            if extracted_distance is not None:
+                                if stored_distance != extracted_distance:
+                                    st.error(f"""
+                                        エラー: 距離データの不一致が検出されました。
+                                        日付: {row.get('date', '')}
+                                        名前: {row.get('name', '')}
+                                        経路: {route_text}
+                                        保存された距離: {stored_distance}
+                                        検出された距離: {extracted_distance}
+                                    """)
+                                    return
+                                distance = extracted_distance
+                            else:
                                 st.error(f"""
                                     エラー: 距離データが検出できません。
                                     日付: {row.get('date', '')}
@@ -386,14 +398,14 @@ def main():
                                 """)
                                 return
                             
-                            # 行データの作成（空の値は空文字列として設定）
+                            # 行データの作成
                             row_data = {
                                 '日付': row.get('date', ''),
                                 '経路': route_text,
-                                '合計\n距離\n(km)': distance if distance else '',
-                                '交通費\n(距離×15P)\n(円)': f"{int(distance * 15):>8,}" if distance else '',
-                                '運転\n手当\n(円)': f"{200:>6,}" if distance else '',
-                                '合計\n(円)': f"{int(distance * 15 + 200):>6,}" if distance else ''
+                                '合計\n距離\n(km)': distance,
+                                '交通費\n(距離×15P)\n(円)': f"{int(distance * 15):>8,}",
+                                '運転\n手当\n(円)': f"{200:>6,}",
+                                '合計\n(円)': f"{int(distance * 15 + 200):>6,}"
                             }
                             display_rows.append(row_data)
                     
