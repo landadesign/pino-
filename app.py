@@ -275,15 +275,15 @@ def main():
                 ),
                 '交通費（距離×15P）(円)': st.column_config.NumberColumn(
                     width='medium',
-                    format="{:,}"
+                    format="{:,.0f}"
                 ),
                 '運転手当(円)': st.column_config.NumberColumn(
                     width='small',
-                    format="{:,}"
+                    format="{:,.0f}"
                 ),
                 '合計(円)': st.column_config.NumberColumn(
                     width='small',
-                    format="{:,}"
+                    format="{:,.0f}"
                 )
             }
             
@@ -307,7 +307,7 @@ def main():
                                 '合計(円)': row['total'] if route == row['routes'][0] else ''
                             })
                     
-                    # DataFrameの作成と表示
+                    # DataFrameの作成
                     display_df = pd.DataFrame(display_rows)
                     
                     # 合計行の追加
@@ -321,9 +321,18 @@ def main():
                     }])
                     display_df = pd.concat([display_df, totals])
                     
+                    # Noneを空文字に置換
+                    display_df = display_df.fillna('')
+                    
+                    # 数値列の空文字を維持しながら、数値のみをカンマ区切りに
+                    for col in ['合計距離(km)', '交通費（距離×15P）(円)', '運転手当(円)', '合計(円)']:
+                        display_df[col] = display_df[col].apply(
+                            lambda x: '{:,.0f}'.format(float(x)) if x != '' else ''
+                        )
+                    
                     # データフレーム表示
                     st.dataframe(
-                        display_df.fillna(''),  # Noneを空文字に置換
+                        display_df,
                         column_config=expense_column_config,
                         use_container_width=True,
                         hide_index=True
