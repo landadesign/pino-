@@ -107,16 +107,21 @@ def parse_expense_data(text):
         for line in lines:
             # 【ピノ】形式のデータを解析
             if '【ピノ】' in line:
-                # パターン: 【ピノ】名前 日付(曜日) 経路
-                pino_match = re.match(r'【ピノ】\s*([^\s]+)\s+(\d+/\d+)\s*\(.\)\s*(.+)', line)
+                # パターン: 【ピノ】名前 日付(曜日) 経路 距離
+                pino_match = re.match(r'【ピノ】\s*([^\s]+)\s+(\d+/\d+)\s*\(.\)\s*(.+?)(?:\s+(\d+\.?\d*)(?:km|㎞|ｋｍ|kｍ))?$', line)
                 if pino_match:
                     name = pino_match.group(1).replace('様', '')
                     date = pino_match.group(2)
                     route = pino_match.group(3).strip()
+                    distance_str = pino_match.group(4)
                     
-                    # 経路からポイント数を計算
-                    route_points = route.split('→')
-                    distance = (len(route_points) - 1) * 5.0
+                    # 距離の取得
+                    if distance_str:
+                        distance = float(distance_str)
+                    else:
+                        # 経路からポイント数を計算（デフォルトの場合）
+                        route_points = route.split('→')
+                        distance = (len(route_points) - 1) * 5.0
                     
                     if name not in daily_routes:
                         daily_routes[name] = {}
@@ -135,6 +140,9 @@ def parse_expense_data(text):
                             'route': route,
                             'distance': distance
                         })
+                        
+                    # デバッグ情報
+                    st.write(f"解析結果: 名前={name}, 日付={date}, 経路={route}, 距離={distance}km")
         
         # 日付ごとのデータを集計
         for name, dates in daily_routes.items():
