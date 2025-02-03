@@ -358,40 +358,32 @@ def main():
                         
                         for route in routes:
                             route_text = route['route']
-                            stored_distance = route.get('distance', '')
+                            distance = ''
                             
                             # 経路テキストから距離を抽出
                             lines = route_text.split('\n')
-                            extracted_distance = None
-                            
                             if len(lines) > 1:
                                 last_line = lines[-1].strip()
                                 for unit in ['km', 'ｋｍ', '㎞']:
                                     if unit in last_line:
                                         try:
                                             dist_value = last_line.replace(unit, '').strip()
-                                            extracted_distance = float(dist_value)
-                                            route_text = '\n'.join(lines[:-1]).strip()
+                                            distance = float(dist_value)
+                                            route_text = lines[0].strip()  # 最初の行を経路として使用
+                                            route['route'] = route_text    # 経路を更新
+                                            route['distance'] = distance   # 距離を更新
                                             break
                                         except ValueError:
                                             continue
                             
-                            # 距離の検証
-                            if extracted_distance is not None:
-                                if stored_distance != extracted_distance:
-                                    st.error(f"""
-                                        エラー: 距離データの不一致が検出されました。
-                                        日付: {row.get('date', '')}
-                                        名前: {row.get('name', '')}
-                                        経路: {route_text}
-                                        保存された距離: {stored_distance}
-                                        検出された距離: {extracted_distance}
-                                    """)
-                                    return
-                                distance = extracted_distance
-                            else:
+                            # 距離が見つからない場合は既存の距離を使用
+                            if not distance and route.get('distance'):
+                                distance = route['distance']
+                            
+                            # 距離が存在しない場合はエラー
+                            if not distance:
                                 st.error(f"""
-                                    エラー: 距離データが検出できません。
+                                    エラー: 距離データが見つかりません。
                                     日付: {row.get('date', '')}
                                     名前: {row.get('name', '')}
                                     経路: {route_text}
