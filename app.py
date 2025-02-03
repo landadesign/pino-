@@ -273,17 +273,14 @@ def main():
                     width='small',
                     format="%.1f"
                 ),
-                '交通費（距離×15P）(円)': st.column_config.NumberColumn(
-                    width='medium',
-                    format="{:,d}"
+                '交通費（距離×15P）(円)': st.column_config.TextColumn(
+                    width='medium'
                 ),
-                '運転手当(円)': st.column_config.NumberColumn(
-                    width='small',
-                    format="{:,d}"
+                '運転手当(円)': st.column_config.TextColumn(
+                    width='small'
                 ),
-                '合計(円)': st.column_config.NumberColumn(
-                    width='small',
-                    format="{:,d}"
+                '合計(円)': st.column_config.TextColumn(
+                    width='small'
                 )
             }
             
@@ -307,9 +304,9 @@ def main():
                             if route == row['routes'][0]:
                                 row_data.update({
                                     '合計距離(km)': row['total_distance'],
-                                    '交通費（距離×15P）(円)': row['transportation_fee'],
-                                    '運転手当(円)': row['allowance'],
-                                    '合計(円)': row['total']
+                                    '交通費（距離×15P）(円)': f"{int(row['transportation_fee']):,}",
+                                    '運転手当(円)': f"{int(row['allowance']):,}",
+                                    '合計(円)': f"{int(row['total']):,}"
                                 })
                             else:
                                 row_data.update({
@@ -324,13 +321,14 @@ def main():
                     display_df = pd.DataFrame(display_rows)
                     
                     # 合計行の追加
+                    total_amount = int(person_data['total'].sum())
                     totals = pd.DataFrame([{
                         '日付': '合計',
                         '経路': '',
                         '合計距離(km)': '',
                         '交通費（距離×15P）(円)': '',
                         '運転手当(円)': '',
-                        '合計(円)': person_data['total'].sum()
+                        '合計(円)': f"{total_amount:,}"
                     }])
                     display_df = pd.concat([display_df, totals])
                     
