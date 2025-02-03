@@ -303,10 +303,10 @@ def main():
                 with tabs[i]:
                     person_data = df[df['name'] == name].copy()
                     
-                    # タイトル表示
+                    # タイトル表示を修正
                     st.markdown(f"""
                         <h4 style='margin: 20px 0; color: #333;'>
-                            {name}様 2024年12月25日～2025年1月 社内通貨（交通費）清算額
+                            {name}様　2025年1月　交通費清算額
                         </h4>
                     """, unsafe_allow_html=True)
                     
