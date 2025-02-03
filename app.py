@@ -195,9 +195,8 @@ def main():
         if 'expense_data' in st.session_state:
             clear_button = st.button("クリア")
             if clear_button:
-                del st.session_state['expense_data']
-                del st.session_state['show_expense_report']
-                st.experimental_rerun()
+                st.session_state.clear()
+                st.rerun()
     
     if analyze_button and input_text:
         df = parse_expense_data(input_text)
