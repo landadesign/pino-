@@ -98,55 +98,82 @@ def create_expense_table_image(df, name):
 
 def parse_expense_data(text):
     try:
+        # テキストの前処理
         lines = [line.strip() for line in text.split('\n') if line.strip()]
         data = []
         current_name = None
         daily_routes = {}
         
+        # 各行を解析
         for line in lines:
+            # 【ピノ】形式のデータを解析
             if '【ピノ】' in line:
-                match = re.match(r'【ピノ】\s*([^\s]+)\s+(\d+/\d+)\s*\([月火水木金土日]\)', line)
-                if match:
-                    name, date = match.groups()
-                    route_start = line.index(')') + 1
-                    route_end = line.find('km')
-                    if route_end == -1:
-                        route_end = line.find('㎞')
-                    route = line[route_start:route_end].strip()
+                # パターン1: 【ピノ】名前 日付(曜日) 経路 距離km
+                pino_match = re.match(r'【ピノ】\s*([^\s]+)\s+(\d+/\d+)\s*\([月火水木金土日]\)\s*(.+?)(\d+\.?\d*)\s*(?:km|㎞|ｋｍ|kｍ)', line)
+                if pino_match:
+                    name, date, route, distance = pino_match.groups()
+                    route = route.strip()
+                    distance = float(distance)
                     
-                    # 距離を抽出
-                    distance_match = re.search(r'(\d+\.?\d*)', line[route_end-5:route_end+5])
-                    if distance_match:
-                        distance = float(distance_match.group(1))
+                    if name not in daily_routes:
+                        daily_routes[name] = {}
+                    if date not in daily_routes[name]:
+                        daily_routes[name][date] = []
                         
-                        if name not in daily_routes:
-                            daily_routes[name] = {}
-                        if date not in daily_routes[name]:
-                            daily_routes[name][date] = []
-                            
-                        daily_routes[name][date].append({
-                            'route': route,
-                            'distance': distance
-                        })
+                    daily_routes[name][date].append({
+                        'route': route,
+                        'distance': distance
+                    })
+                    continue
+            
+            # 通常形式のデータを解析
+            if '様' in line:
+                current_name = line.replace('様', '').strip()
+                continue
+            
+            if current_name and len(line.split()) >= 2:
+                parts = line.split()
+                date = parts[0]
+                route = ' '.join(parts[1:])
+                
+                # 経路からポイント数を計算
+                route_points = route.split('→')
+                distance = (len(route_points) - 1) * 5.0
+                
+                if current_name not in daily_routes:
+                    daily_routes[current_name] = {}
+                if date not in daily_routes[current_name]:
+                    daily_routes[current_name][date] = []
+                    
+                daily_routes[current_name][date].append({
+                    'route': route,
+                    'distance': distance
+                })
         
         # 日付ごとのデータを集計
         for name, dates in daily_routes.items():
             for date, routes in dates.items():
+                # 同じ日の距離を合算
                 total_distance = sum(route['distance'] for route in routes)
                 transportation_fee = int(total_distance * RATE_PER_KM)  # 切り捨て
+                
                 data.append({
                     'name': name,
                     'date': date,
                     'routes': routes,
                     'total_distance': total_distance,
                     'transportation_fee': transportation_fee,
-                    'allowance': DAILY_ALLOWANCE,
+                    'allowance': DAILY_ALLOWANCE,  # 1日1回のみ
                     'total': transportation_fee + DAILY_ALLOWANCE
                 })
         
         if data:
+            # データをDataFrameに変換し、日付でソート
             df = pd.DataFrame(data)
-            return df.sort_values(['name', 'date'])  # 日付順にソート
+            df['date_for_sort'] = pd.to_datetime(df['date'].apply(lambda x: f'2024/{x}'))
+            df = df.sort_values(['name', 'date_for_sort'])
+            df = df.drop('date_for_sort', axis=1)
+            return df
         
         st.error("データが見つかりませんでした。正しい形式で入力してください。")
         return None
@@ -169,12 +196,14 @@ def main():
             clear_button = st.button("クリア")
             if clear_button:
                 del st.session_state['expense_data']
+                del st.session_state['show_expense_report']
                 st.experimental_rerun()
     
     if analyze_button and input_text:
         df = parse_expense_data(input_text)
         if df is not None:
             st.session_state['expense_data'] = df
+            st.session_state['show_expense_report'] = False
             st.success("データを解析しました！")
     
     # データ表示と精算書生成
@@ -186,14 +215,17 @@ def main():
         
         # 一覧表示用のデータを作成
         list_data = []
+        entry_id = 1
         for _, row in df.iterrows():
             for route in row['routes']:
                 list_data.append({
+                    'No.': entry_id,
                     '日付': row['date'],
                     '担当者': row['name'],
                     '経路': route['route'],
                     '距離(km)': route['distance']
                 })
+                entry_id += 1
         
         list_df = pd.DataFrame(list_data)
         st.dataframe(
