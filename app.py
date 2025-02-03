@@ -4,7 +4,6 @@ from datetime import datetime
 import io
 from PIL import Image, ImageDraw, ImageFont
 import re
-import plotly.graph_objects as go
 
 # ページ設定を最初に行う
 st.set_page_config(layout="wide")
