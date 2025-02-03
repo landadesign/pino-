@@ -332,7 +332,6 @@ def main():
             
             for i, name in enumerate(unique_names):
                 with tabs[i]:
-                    # データを日付でソート
                     person_data = df[df['name'] == name].sort_values('date').copy()
                     
                     # データ表示用のリストを作成
@@ -340,7 +339,20 @@ def main():
                     
                     for _, row in person_data.iterrows():
                         routes = row['routes']
-                        total_distance = row['total_distance']
+                        
+                        # 距離データの検証
+                        for route in routes:
+                            if 'distance' not in route or route['distance'] is None:
+                                st.error(f"エラー: {row['date']}の経路「{route['route']}」の距離データがありません。")
+                                return
+                            try:
+                                distance = float(route['distance'])
+                                if distance <= 0:
+                                    st.error(f"エラー: {row['date']}の経路「{route['route']}」の距離が0以下です。")
+                                    return
+                            except (ValueError, TypeError):
+                                st.error(f"エラー: {row['date']}の経路「{route['route']}」の距離データが不正です。")
+                                return
                         
                         # 経路テキストの処理
                         route_texts = []
@@ -372,7 +384,7 @@ def main():
                         # 複数経路の場合、合計を表示
                         if len(routes) > 1:
                             distances = [f"{r['distance']:.1f}" for r in routes]
-                            route_texts.append(f"合計: {' + '.join(distances)} = {total_distance:.1f}km")
+                            route_texts.append(f"合計: {' + '.join(distances)} = {row['total_distance']:.1f}km")
                         
                         # 経路を結合
                         final_route_text = '\n'.join(route_texts)
@@ -381,7 +393,7 @@ def main():
                         row_data = {
                             '日付': row['date'],
                             '経路': final_route_text,
-                            '合計\n距離\n(km)': total_distance,
+                            '合計\n距離\n(km)': row['total_distance'],
                             '交通費\n(距離×15P)\n(円)': f"{int(row['transportation_fee']):>8,}",
                             '運転\n手当\n(円)': f"{int(row['allowance']):>6,}",
                             '合計\n(円)': f"{int(row['total']):>6,}"
