@@ -267,35 +267,30 @@ def main():
             
             # 精算書用のカラム設定
             expense_column_config = {
-                '日付': st.column_config.TextColumn(
+                '日付': st.column_config.Column(
                     width=80,
-                    help="日付",
-                    text_align="center"
+                    help="日付"
                 ),
-                '経路': st.column_config.TextColumn(
+                '経路': st.column_config.Column(
                     width=450,
                     help="移動経路"
                 ),
                 '合計距離\n(km)': st.column_config.NumberColumn(
                     width=100,
                     format="%.1f",
-                    help="移動距離の合計",
-                    text_align="center"
+                    help="移動距離の合計"
                 ),
-                '交通費\n（距離×15P）\n(円)': st.column_config.TextColumn(
+                '交通費\n（距離×15P）\n(円)': st.column_config.Column(
                     width=150,
-                    help="距離×15円",
-                    text_align="center"
+                    help="距離×15円"
                 ),
-                '運転手当\n(円)': st.column_config.TextColumn(
+                '運転手当\n(円)': st.column_config.Column(
                     width=120,
-                    help="運転手当",
-                    text_align="center"
+                    help="運転手当"
                 ),
-                '合計\n(円)': st.column_config.TextColumn(
+                '合計\n(円)': st.column_config.Column(
                     width=120,
-                    help="交通費と手当の合計",
-                    text_align="center"
+                    help="交通費と手当の合計"
                 )
             }
             
@@ -342,12 +337,12 @@ def main():
                                 else:
                                     route_text = f"{route_text} ({route['distance']:.1f}km)"
                             
-                            # 数値を見やすく整形
+                            # 数値を見やすく整形（中央寄せ）
                             if idx == 0:  # 1日の最初の経路
                                 distance = row['total_distance']
-                                transportation_fee = f"{int(row['transportation_fee']):,}"
-                                allowance = f"{int(row['allowance']):,}"
-                                total = f"{int(row['total']):,}"
+                                transportation_fee = f"{int(row['transportation_fee']):^12,}"
+                                allowance = f"{int(row['allowance']):^8,}"
+                                total = f"{int(row['total']):^8,}"
                             else:
                                 distance = ''
                                 transportation_fee = ''
@@ -373,14 +368,14 @@ def main():
                     total_allowance = person_data['allowance'].sum()
                     total_amount = person_data['total'].sum()
                     
-                    # 合計行の追加
+                    # 合計行の追加（中央寄せ）
                     totals = pd.DataFrame([{
                         '日付': '合計',
                         '経路': '',
                         '合計距離\n(km)': total_distance,
-                        '交通費\n（距離×15P）\n(円)': f"{int(total_transportation):,}",
-                        '運転手当\n(円)': f"{int(total_allowance):,}",
-                        '合計\n(円)': f"{int(total_amount):,}"
+                        '交通費\n（距離×15P）\n(円)': f"{int(total_transportation):^12,}",
+                        '運転手当\n(円)': f"{int(total_allowance):^8,}",
+                        '合計\n(円)': f"{int(total_amount):^8,}"
                     }])
                     
                     # DataFrameを結合
