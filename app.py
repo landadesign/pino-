@@ -113,7 +113,10 @@ def parse_expense_data(text):
                 if pino_match:
                     name, date, route, distance = pino_match.groups()
                     route = route.strip()
-                    distance = float(distance)
+                    try:
+                        distance = float(distance)
+                    except ValueError:
+                        continue
                     
                     if name not in daily_routes:
                         daily_routes[name] = {}
@@ -127,30 +130,34 @@ def parse_expense_data(text):
                     continue
             
             # 通常形式のデータを解析
-            if '様' in line:
-                current_name = line.replace('様', '').strip()
+            name_match = re.match(r'(.+?)様', line)
+            if name_match:
+                current_name = name_match.group(1).strip()
                 continue
             
-            if current_name and len(line.split()) >= 2:
-                parts = line.split()
-                date = parts[0]
+            # 日付と経路の解析
+            date_match = re.match(r'(\d+/\d+|\d+月\d+日)', line)
+            if current_name and date_match:
+                date = date_match.group(1)
                 if '月' in date:  # 日付形式の正規化
                     date = date.replace('月', '/').replace('日', '')
-                route = ' '.join(parts[1:])
                 
-                # 経路からポイント数を計算
-                route_points = route.split('→')
-                distance = (len(route_points) - 1) * 5.0
-                
-                if current_name not in daily_routes:
-                    daily_routes[current_name] = {}
-                if date not in daily_routes[current_name]:
-                    daily_routes[current_name][date] = []
+                # 経路部分の抽出
+                route_part = line[date_match.end():].strip()
+                if route_part:
+                    # 経路からポイント数を計算
+                    route_points = route_part.split('→')
+                    distance = (len(route_points) - 1) * 5.0
                     
-                daily_routes[current_name][date].append({
-                    'route': route,
-                    'distance': distance
-                })
+                    if current_name not in daily_routes:
+                        daily_routes[current_name] = {}
+                    if date not in daily_routes[current_name]:
+                        daily_routes[current_name][date] = []
+                        
+                    daily_routes[current_name][date].append({
+                        'route': route_part,
+                        'distance': distance
+                    })
         
         # 日付ごとのデータを集計
         for name, dates in daily_routes.items():
@@ -175,7 +182,7 @@ def parse_expense_data(text):
             
             # 日付を数値化してソート用に使用
             def date_to_sortable(date_str):
-                month, day = map(int, date_str.replace('月', '/').replace('日', '').split('/'))
+                month, day = map(int, date_str.split('/'))
                 return month * 100 + day
             
             df['date_sort'] = df['date'].apply(date_to_sortable)
