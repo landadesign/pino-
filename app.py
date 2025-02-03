@@ -340,18 +340,23 @@ def main():
                     for _, row in person_data.iterrows():
                         routes = row['routes']
                         
-                        # 距離データの検証
+                        # データ検証と距離の抽出
                         for route in routes:
-                            if 'distance' not in route or route['distance'] is None:
-                                st.error(f"エラー: {row['date']}の経路「{route['route']}」の距離データがありません。")
-                                return
-                            try:
-                                distance = float(route['distance'])
-                                if distance <= 0:
-                                    st.error(f"エラー: {row['date']}の経路「{route['route']}」の距離が0以下です。")
+                            route_text = route['route']
+                            # 改行で分割
+                            lines = route_text.split('\n')
+                            if len(lines) > 1:
+                                # 最後の行が数値のみの場合、それを距離として扱う
+                                try:
+                                    distance = float(lines[-1].strip())
+                                    # 経路は最後の行を除いた部分
+                                    route['route'] = '\n'.join(lines[:-1]).strip()
+                                    route['distance'] = distance
+                                except (ValueError, TypeError):
+                                    st.error(f"エラー: {row['date']}の経路の距離データが不正です。\n{route_text}")
                                     return
-                            except (ValueError, TypeError):
-                                st.error(f"エラー: {row['date']}の経路「{route['route']}」の距離データが不正です。")
+                            elif 'distance' not in route or route['distance'] is None:
+                                st.error(f"エラー: {row['date']}の経路「{route_text}」の距離データがありません。")
                                 return
                         
                         # 経路テキストの処理
@@ -389,14 +394,14 @@ def main():
                         # 経路を結合
                         final_route_text = '\n'.join(route_texts)
                         
-                        # 行データの作成
+                        # 行データの作成（空の値は空文字列として設定）
                         row_data = {
                             '日付': row['date'],
                             '経路': final_route_text,
-                            '合計\n距離\n(km)': row['total_distance'],
-                            '交通費\n(距離×15P)\n(円)': f"{int(row['transportation_fee']):>8,}",
-                            '運転\n手当\n(円)': f"{int(row['allowance']):>6,}",
-                            '合計\n(円)': f"{int(row['total']):>6,}"
+                            '合計\n距離\n(km)': row['total_distance'] if 'total_distance' in row else '',
+                            '交通費\n(距離×15P)\n(円)': f"{int(row['transportation_fee']):>8,}" if 'transportation_fee' in row else '',
+                            '運転\n手当\n(円)': f"{int(row['allowance']):>6,}" if 'allowance' in row else '',
+                            '合計\n(円)': f"{int(row['total']):>6,}" if 'total' in row else ''
                         }
                         display_rows.append(row_data)
                     
