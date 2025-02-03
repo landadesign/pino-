@@ -267,20 +267,34 @@ def main():
             
             # 精算書用のカラム設定
             expense_column_config = {
-                '日付': st.column_config.TextColumn(width='small'),
-                '経路': st.column_config.TextColumn(width='large'),
+                '日付': st.column_config.TextColumn(
+                    width='small',
+                    default=""
+                ),
+                '経路': st.column_config.TextColumn(
+                    width='large',
+                    default=""
+                ),
                 '合計距離(km)': st.column_config.NumberColumn(
                     width='small',
-                    format="%.1f"
+                    format="%.1f",
+                    default="",
+                    help="移動距離の合計"
                 ),
                 '交通費（距離×15P）(円)': st.column_config.TextColumn(
-                    width='medium'
+                    width='medium',
+                    default="",
+                    align="right"
                 ),
                 '運転手当(円)': st.column_config.TextColumn(
-                    width='small'
+                    width='small',
+                    default="",
+                    align="right"
                 ),
                 '合計(円)': st.column_config.TextColumn(
-                    width='small'
+                    width='small',
+                    default="",
+                    align="right"
                 )
             }
             
@@ -310,10 +324,10 @@ def main():
                                 })
                             else:
                                 row_data.update({
-                                    '合計距離(km)': '',
-                                    '交通費（距離×15P）(円)': '',
-                                    '運転手当(円)': '',
-                                    '合計(円)': ''
+                                    '合計距離(km)': "",
+                                    '交通費（距離×15P）(円)': "",
+                                    '運転手当(円)': "",
+                                    '合計(円)': ""
                                 })
                             display_rows.append(row_data)
                     
@@ -331,6 +345,9 @@ def main():
                         '合計(円)': f"{total_amount:,}"
                     }])
                     display_df = pd.concat([display_df, totals])
+                    
+                    # Noneを空文字に置換
+                    display_df = display_df.fillna('')
                     
                     # データフレーム表示
                     st.dataframe(
