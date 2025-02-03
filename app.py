@@ -5,8 +5,8 @@ import io
 from PIL import Image, ImageDraw, ImageFont
 import re
 
-# ページ設定
-st.set_page_config(page_title="PINO精算アプリケーション", layout="wide")
+# ページ設定を最初に行う
+st.set_page_config(layout="wide")
 
 # 定数
 RATE_PER_KM = 15
@@ -178,9 +178,6 @@ def parse_expense_data(text):
 
 def main():
     st.title("PINO精算アプリケーション")
-    
-    # ページ幅を最大に設定
-    st.set_page_config(layout="wide")
     
     # データ入力
     input_text = st.text_area("精算データを貼り付けてください", height=200)
