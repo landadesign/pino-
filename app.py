@@ -180,69 +180,89 @@ def main():
     # データ表示と精算書生成
     if 'expense_data' in st.session_state:
         df = st.session_state['expense_data']
-        unique_names = df['name'].unique().tolist()
         
-        # 個人別タブの作成
-        tabs = st.tabs(unique_names)
+        # 全体の解析一覧を表示
+        st.markdown("### 交通費データ一覧")
         
-        for i, name in enumerate(unique_names):
-            with tabs[i]:
-                person_data = df[df['name'] == name].copy()
-                
-                # タイトル表示
-                st.markdown(f"### {name}様 2024年12月25日～2025年1月 社内通貨（交通費）清算額")
-                
-                # データ表示用のリストを作成
-                display_rows = []
-                for _, row in person_data.iterrows():
-                    for route in row['routes']:
-                        display_rows.append({
-                            '日付': row['date'],
-                            '経路': route['route'],
-                            '合計距離(km)': row['total_distance'] if route == row['routes'][0] else '',
-                            '交通費（距離×15P）(円)': row['transportation_fee'] if route == row['routes'][0] else '',
-                            '運転手当(円)': row['allowance'] if route == row['routes'][0] else '',
-                            '合計(円)': row['total'] if route == row['routes'][0] else ''
-                        })
-                
-                # DataFrameの作成と表示
-                display_df = pd.DataFrame(display_rows)
-                
-                # 合計行の追加
-                totals = pd.DataFrame([{
-                    '日付': '合計',
-                    '経路': '',
-                    '合計距離(km)': '',
-                    '交通費（距離×15P）(円)': '',
-                    '運転手当(円)': '',
-                    '合計(円)': person_data['total'].sum()
-                }])
-                display_df = pd.concat([display_df, totals])
-                
-                # データフレーム表示
-                st.dataframe(
-                    display_df.style.format({
-                        '合計距離(km)': lambda x: f'{float(x):.1f}' if x != '' else '',
-                        '交通費（距離×15P）(円)': lambda x: f'{int(x):,}' if x != '' else '',
-                        '運転手当(円)': lambda x: f'{int(x):,}' if x != '' else '',
-                        '合計(円)': lambda x: f'{int(x):,}' if x != '' else ''
-                    }),
-                    use_container_width=True,
-                    hide_index=True
-                )
-                
-                # 注釈表示
-                st.markdown("※2025年1月分給与にて清算しました。")
-                st.markdown(f"計算日時: {datetime.now().strftime('%Y/%m/%d')}")
-                
-                # 画像生成とダウンロードボタン
-                img_bytes = create_expense_table_image(person_data, name)
-                st.download_button(
-                    label="精算書をダウンロード",
-                    data=img_bytes,
-                    file_name=f"精算書_{name}_{datetime.now().strftime('%Y%m%d')}.png",
-                    mime="image/png"
-                )
+        # 一覧表示用のデータを作成
+        list_data = []
+        for _, row in df.iterrows():
+            for route in row['routes']:
+                list_data.append({
+                    '日付': row['date'],
+                    '担当者': row['name'],
+                    '経路': route['route'],
+                    '距離(km)': route['distance']
+                })
+        
+        list_df = pd.DataFrame(list_data)
+        st.dataframe(
+            list_df.style.format({
+                '距離(km)': '{:.1f}'
+            }),
+            use_container_width=True,
+            hide_index=True
+        )
+        
+        # 精算書作成ボタン
+        if st.button("精算書を作成"):
+            st.session_state['show_expense_report'] = True
+        
+        # 精算書の表示
+        if st.session_state.get('show_expense_report', False):
+            st.markdown("### 担当者別精算書")
+            unique_names = df['name'].unique().tolist()
+            tabs = st.tabs(unique_names)
+            
+            for i, name in enumerate(unique_names):
+                with tabs[i]:
+                    person_data = df[df['name'] == name].copy()
+                    
+                    # タイトル表示
+                    st.markdown(f"#### {name}様 2024年12月25日～2025年1月 社内通貨（交通費）清算額")
+                    
+                    # データ表示用のリストを作成
+                    display_rows = []
+                    for _, row in person_data.iterrows():
+                        for route in row['routes']:
+                            display_rows.append({
+                                '日付': row['date'],
+                                '経路': route['route'],
+                                '合計距離(km)': row['total_distance'] if route == row['routes'][0] else '',
+                                '交通費（距離×15P）(円)': row['transportation_fee'] if route == row['routes'][0] else '',
+                                '運転手当(円)': row['allowance'] if route == row['routes'][0] else '',
+                                '合計(円)': row['total'] if route == row['routes'][0] else ''
+                            })
+                    
+                    # DataFrameの作成と表示
+                    display_df = pd.DataFrame(display_rows)
+                    
+                    # 合計行の追加
+                    totals = pd.DataFrame([{
+                        '日付': '合計',
+                        '経路': '',
+                        '合計距離(km)': '',
+                        '交通費（距離×15P）(円)': '',
+                        '運転手当(円)': '',
+                        '合計(円)': person_data['total'].sum()
+                    }])
+                    display_df = pd.concat([display_df, totals])
+                    
+                    # データフレーム表示
+                    st.dataframe(
+                        display_df.style.format({
+                            '合計距離(km)': lambda x: f'{float(x):.1f}' if x != '' else '',
+                            '交通費（距離×15P）(円)': lambda x: f'{int(x):,}' if x != '' else '',
+                            '運転手当(円)': lambda x: f'{int(x):,}' if x != '' else '',
+                            '合計(円)': lambda x: f'{int(x):,}' if x != '' else ''
+                        }),
+                        use_container_width=True,
+                        hide_index=True
+                    )
+                    
+                    # 注釈表示
+                    st.markdown("※2025年1月分給与にて清算しました。")
+                    st.markdown(f"計算日時: {datetime.now().strftime('%Y/%m/%d')}")
 
 if __name__ == "__main__":
     main()
