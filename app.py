@@ -361,41 +361,40 @@ def main():
                         for route in routes:
                             route_text = route['route']
                             
-                            # 改行を含む経路テキストの処理
-                            if '\n' in route_text:
-                                lines = route_text.split('\n')
-                                last_line = lines[-1].strip()
-                                
-                                # 距離の抽出
-                                for unit in ['km', 'ｋｍ', '㎞']:
-                                    if unit in last_line:
-                                        try:
-                                            dist_value = last_line.replace(unit, '').strip()
-                                            # 経路と距離を分離して更新
-                                            route['route'] = lines[0].strip()
-                                            route['distance'] = float(dist_value)
+                            # 改行を空白に置換して全体を1行のテキストとして処理
+                            full_text = route_text.replace('\n', ' ').strip()
+                            
+                            # 距離の抽出
+                            distance = ''
+                            for unit in ['km', 'ｋｍ', '㎞']:
+                                if unit in full_text:
+                                    parts = full_text.split(unit)
+                                    try:
+                                        # 最後の数値を距離として抽出
+                                        nums = [word.strip() for word in parts[0].split() if word.strip().replace('.', '').isdigit()]
+                                        if nums:
+                                            distance = float(nums[-1])
+                                            # 距離部分を除いた経路テキスト
+                                            route_text = full_text.replace(f"{distance}{unit}", '').strip()
+                                            route['route'] = route_text
+                                            route['distance'] = distance
                                             break
-                                        except ValueError:
-                                            continue
+                                    except ValueError:
+                                        continue
                             
-                            # 距離が存在しない場合はエラー
-                            if not route.get('distance'):
-                                st.error(f"""
-                                    エラー: 距離データが見つかりません。
-                                    日付: {row.get('date', '')}
-                                    名前: {row.get('name', '')}
-                                    経路: {route_text}
-                                """)
-                                return
+                            # 距離が見つからない場合は空文字列を設定
+                            if not distance:
+                                route['distance'] = ''
+                                route['route'] = full_text
                             
-                            # 行データの作成
+                            # 行データの作成（空の値は空文字列として設定）
                             row_data = {
                                 '日付': row.get('date', ''),
                                 '経路': route['route'],
-                                '合計\n距離\n(km)': route['distance'],
-                                '交通費\n(距離×15P)\n(円)': f"{int(route['distance'] * 15):>8,}",
-                                '運転\n手当\n(円)': f"{200:>6,}",
-                                '合計\n(円)': f"{int(route['distance'] * 15 + 200):>6,}"
+                                '合計\n距離\n(km)': route['distance'] if route['distance'] else '',
+                                '交通費\n(距離×15P)\n(円)': f"{int(route['distance'] * 15):>8,}" if route['distance'] else '',
+                                '運転\n手当\n(円)': f"{200:>6,}" if route['distance'] else '',
+                                '合計\n(円)': f"{int(route['distance'] * 15 + 200):>6,}" if route['distance'] else ''
                             }
                             display_rows.append(row_data)
                     
