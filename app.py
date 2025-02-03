@@ -273,28 +273,28 @@ def main():
             # 精算書用のカラム設定
             expense_column_config = {
                 '日付': st.column_config.Column(
-                    width=85,
+                    width=100,
                     help="日付"
                 ),
                 '経路': st.column_config.Column(
-                    width=460,
+                    width=520,
                     help="移動経路"
                 ),
                 '合計\n距離\n(km)': st.column_config.NumberColumn(
-                    width=90,
+                    width=110,
                     format="%.1f",
                     help="移動距離の合計"
                 ),
                 '交通費\n(距離×15P)\n(円)': st.column_config.Column(
-                    width=130,
+                    width=160,
                     help="距離×15円"
                 ),
                 '運転\n手当\n(円)': st.column_config.Column(
-                    width=90,
+                    width=110,
                     help="運転手当"
                 ),
                 '合計\n(円)': st.column_config.Column(
-                    width=100,
+                    width=120,
                     help="交通費と手当の合計"
                 )
             }
