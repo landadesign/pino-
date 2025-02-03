@@ -336,7 +336,7 @@ def main():
                                 
                                 if current_line:
                                     new_text.append(current_line.strip())
-                                route_text = '\n'.join(new_text)
+                                    route_text = '\n'.join(new_text)
                             
                             # 同じ日に2件以上ある場合、距離の内訳を表示
                             if len(routes) > 1:
@@ -346,25 +346,14 @@ def main():
                                 else:
                                     route_text = f"{route_text} ({route['distance']:.1f}km)"
                             
-                            # 数値を見やすく整形（中央寄せ）
-                            if idx == 0:  # 1日の最初の経路
-                                distance = row['total_distance']
-                                transportation_fee = f"{int(row['transportation_fee']):^10,}"
-                                allowance = f"{int(row['allowance']):^6,}"
-                                total = f"{int(row['total']):^8,}"
-                            else:
-                                distance = ''
-                                transportation_fee = ''
-                                allowance = ''
-                                total = ''
-                            
+                            # 数値データを準備（最初の経路のみ値を設定）
                             row_data = {
                                 '日付': row['date'],
                                 '経路': route_text,
-                                '合計\n距離\n(km)': distance if distance != '' else '',
-                                '交通費\n(距離×15P)\n(円)': transportation_fee,
-                                '運転\n手当\n(円)': allowance,
-                                '合計\n(円)': total
+                                '合計\n距離\n(km)': row['total_distance'] if idx == 0 else '',
+                                '交通費\n(距離×15P)\n(円)': int(row['transportation_fee']) if idx == 0 else '',
+                                '運転\n手当\n(円)': int(row['allowance']) if idx == 0 else '',
+                                '合計\n(円)': int(row['total']) if idx == 0 else ''
                             }
                             display_rows.append(row_data)
                     
@@ -373,26 +362,29 @@ def main():
                     
                     # 合計を計算
                     total_distance = person_data['total_distance'].sum()
-                    total_transportation = person_data['transportation_fee'].sum()
-                    total_allowance = person_data['allowance'].sum()
-                    total_amount = person_data['total'].sum()
+                    total_transportation = int(person_data['transportation_fee'].sum())
+                    total_allowance = int(person_data['allowance'].sum())
+                    total_amount = int(person_data['total'].sum())
                     
-                    # 合計行の追加（中央寄せ）
+                    # 合計行の追加
                     totals = pd.DataFrame([{
                         '日付': '合計',
                         '経路': '',
                         '合計\n距離\n(km)': total_distance,
-                        '交通費\n(距離×15P)\n(円)': f"{int(total_transportation):^10,}",
-                        '運転\n手当\n(円)': f"{int(total_allowance):^6,}",
-                        '合計\n(円)': f"{int(total_amount):^8,}"
+                        '交通費\n(距離×15P)\n(円)': total_transportation,
+                        '運転\n手当\n(円)': total_allowance,
+                        '合計\n(円)': total_amount
                     }])
                     
                     # DataFrameを結合
                     display_df = pd.concat([display_df, totals])
                     
-                    # Noneと空文字の処理
-                    display_df = display_df.fillna('')
-                    display_df = display_df.replace({None: '', 'None': '', float('nan'): '', 'nan': ''})
+                    # 数値のフォーマットと中央寄せを適用
+                    display_df = display_df.style.format({
+                        '交通費\n(距離×15P)\n(円)': lambda x: f"{int(x):^12,}" if x != '' else '',
+                        '運転\n手当\n(円)': lambda x: f"{int(x):^8,}" if x != '' else '',
+                        '合計\n(円)': lambda x: f"{int(x):^8,}" if x != '' else ''
+                    })
                     
                     # データフレーム表示
                     st.dataframe(
