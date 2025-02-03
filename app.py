@@ -343,6 +343,13 @@ def main():
                 with tabs[i]:
                     person_data = df[df['name'] == name].sort_values('date').copy()
                     
+                    # デバッグ情報の表示
+                    st.write("データ確認:")
+                    for _, row in person_data.iterrows():
+                        st.write(f"日付: {row['date']}")
+                        st.write(f"経路データ: {row['routes']}")
+                        st.write("---")
+                    
                     # データ表示用のリストを作成
                     display_rows = []
                     
@@ -351,12 +358,32 @@ def main():
                         
                         for route in routes:
                             route_text = route['route']
-                            distance = route.get('distance')
+                            distance = route.get('distance', '')
                             
                             # 距離のバリデーション
-                            if distance is None or distance <= 0:
+                            if not distance:
                                 st.error(f"""
-                                    エラー: 距離データの読み取りに失敗しました。
+                                    エラー: 距離データが空です。
+                                    日付: {row.get('date', '')}
+                                    名前: {row.get('name', '')}
+                                    経路: {route_text}
+                                """)
+                                return
+                            
+                            try:
+                                distance = float(distance)
+                                if distance <= 0:
+                                    st.error(f"""
+                                        エラー: 距離が0以下です。
+                                        日付: {row.get('date', '')}
+                                        名前: {row.get('name', '')}
+                                        経路: {route_text}
+                                        距離: {distance}
+                                    """)
+                                    return
+                            except (ValueError, TypeError):
+                                st.error(f"""
+                                    エラー: 距離データが不正です。
                                     日付: {row.get('date', '')}
                                     名前: {row.get('name', '')}
                                     経路: {route_text}
