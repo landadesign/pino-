@@ -334,8 +334,8 @@ def main():
                             
                             # 行データの作成（空の値は空文字列として設定）
                             row_data = {
-                                '日付': row.get('date', ''),
-                                '経路': route_text,
+                                '日付': row.get('date', '') or '',
+                                '経路': route_text or '',
                                 '合計\n距離\n(km)': distance if distance else '',
                                 '交通費\n(距離×15P)\n(円)': f"{int(distance * 15):>8,}" if distance else '',
                                 '運転\n手当\n(円)': f"{200:>6,}" if distance else '',
@@ -347,8 +347,9 @@ def main():
                     if display_rows:
                         display_df = pd.DataFrame(display_rows)
                         
-                        # 合計行の追加
-                        total_distance = display_df['合計\n距離\n(km)'].sum()
+                        # 数値計算のための一時的な変換
+                        numeric_distances = pd.to_numeric(display_df['合計\n距離\n(km)'], errors='coerce')
+                        total_distance = numeric_distances.sum()
                         total_transport = total_distance * 15
                         total_allowance = len(display_df) * 200
                         total_amount = total_transport + total_allowance
@@ -356,10 +357,10 @@ def main():
                         totals = pd.DataFrame([{
                             '日付': '合計',
                             '経路': '',
-                            '合計\n距離\n(km)': total_distance,
-                            '交通費\n(距離×15P)\n(円)': f"{int(total_transport):>8,}",
-                            '運転\n手当\n(円)': f"{int(total_allowance):>6,}",
-                            '合計\n(円)': f"{int(total_amount):>6,}"
+                            '合計\n距離\n(km)': total_distance if total_distance else '',
+                            '交通費\n(距離×15P)\n(円)': f"{int(total_transport):>8,}" if total_transport else '',
+                            '運転\n手当\n(円)': f"{int(total_allowance):>6,}" if total_allowance else '',
+                            '合計\n(円)': f"{int(total_amount):>6,}" if total_amount else ''
                         }])
                         
                         display_df = pd.concat([display_df, totals])
