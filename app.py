@@ -261,35 +261,40 @@ def main():
         
         # 精算書の表示
         if st.session_state.get('show_expense_report', False):
-            st.markdown("### 担当者別精算書")
+            st.markdown("""
+                <h3 style='margin-bottom: 20px; padding: 10px; background-color: #f0f2f6; border-radius: 5px;'>
+                    担当者別精算書
+                </h3>
+            """, unsafe_allow_html=True)
+            
             unique_names = df['name'].unique().tolist()
             tabs = st.tabs(unique_names)
             
             # 精算書用のカラム設定
             expense_column_config = {
                 '日付': st.column_config.Column(
-                    width=80,
+                    width=85,
                     help="日付"
                 ),
                 '経路': st.column_config.Column(
-                    width=450,
+                    width=460,
                     help="移動経路"
                 ),
-                '合計距離\n(km)': st.column_config.NumberColumn(
-                    width=100,
+                '合計\n距離\n(km)': st.column_config.NumberColumn(
+                    width=90,
                     format="%.1f",
                     help="移動距離の合計"
                 ),
-                '交通費\n（距離×15P）\n(円)': st.column_config.Column(
-                    width=150,
+                '交通費\n(距離×15P)\n(円)': st.column_config.Column(
+                    width=130,
                     help="距離×15円"
                 ),
-                '運転手当\n(円)': st.column_config.Column(
-                    width=120,
+                '運転\n手当\n(円)': st.column_config.Column(
+                    width=90,
                     help="運転手当"
                 ),
                 '合計\n(円)': st.column_config.Column(
-                    width=120,
+                    width=100,
                     help="交通費と手当の合計"
                 )
             }
@@ -299,7 +304,11 @@ def main():
                     person_data = df[df['name'] == name].copy()
                     
                     # タイトル表示
-                    st.markdown(f"#### {name}様 2024年12月25日～2025年1月 社内通貨（交通費）清算額")
+                    st.markdown(f"""
+                        <h4 style='margin: 20px 0; color: #333;'>
+                            {name}様 2024年12月25日～2025年1月 社内通貨（交通費）清算額
+                        </h4>
+                    """, unsafe_allow_html=True)
                     
                     # データ表示用のリストを作成
                     display_rows = []
@@ -340,8 +349,8 @@ def main():
                             # 数値を見やすく整形（中央寄せ）
                             if idx == 0:  # 1日の最初の経路
                                 distance = row['total_distance']
-                                transportation_fee = f"{int(row['transportation_fee']):^12,}"
-                                allowance = f"{int(row['allowance']):^8,}"
+                                transportation_fee = f"{int(row['transportation_fee']):^10,}"
+                                allowance = f"{int(row['allowance']):^6,}"
                                 total = f"{int(row['total']):^8,}"
                             else:
                                 distance = ''
@@ -352,9 +361,9 @@ def main():
                             row_data = {
                                 '日付': row['date'],
                                 '経路': route_text,
-                                '合計距離\n(km)': distance if distance != '' else '',
-                                '交通費\n（距離×15P）\n(円)': transportation_fee,
-                                '運転手当\n(円)': allowance,
+                                '合計\n距離\n(km)': distance if distance != '' else '',
+                                '交通費\n(距離×15P)\n(円)': transportation_fee,
+                                '運転\n手当\n(円)': allowance,
                                 '合計\n(円)': total
                             }
                             display_rows.append(row_data)
@@ -372,9 +381,9 @@ def main():
                     totals = pd.DataFrame([{
                         '日付': '合計',
                         '経路': '',
-                        '合計距離\n(km)': total_distance,
-                        '交通費\n（距離×15P）\n(円)': f"{int(total_transportation):^12,}",
-                        '運転手当\n(円)': f"{int(total_allowance):^8,}",
+                        '合計\n距離\n(km)': total_distance,
+                        '交通費\n(距離×15P)\n(円)': f"{int(total_transportation):^10,}",
+                        '運転\n手当\n(円)': f"{int(total_allowance):^6,}",
                         '合計\n(円)': f"{int(total_amount):^8,}"
                     }])
                     
@@ -394,8 +403,11 @@ def main():
                     )
                     
                     # 注釈表示
-                    st.markdown("※2025年1月分給与にて清算しました。")
-                    st.markdown(f"計算日時: {datetime.now().strftime('%Y/%m/%d')}")
+                    st.markdown("""
+                        <div style='margin-top: 15px; color: #666;'>
+                            ※2025年1月分給与にて清算しました。
+                        </div>
+                    """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
