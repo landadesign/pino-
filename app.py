@@ -265,6 +265,43 @@ def main():
                 <h3 style='margin-bottom: 20px; padding: 10px; background-color: #f0f2f6; border-radius: 5px;'>
                     担当者別精算書
                 </h3>
+                
+                <!-- 印刷用スタイル -->
+                <style>
+                    @media print {
+                        .stApp > header, .stApp > footer, 
+                        .stToolbar, .stSidebar, .stStatusWidget {
+                            display: none !important;
+                        }
+                        .main > div {
+                            padding: 0 !important;
+                        }
+                        body {
+                            font-family: "Hiragino Kaku Gothic Pro", "ヒラギノ角ゴ Pro W3", Meiryo, "メイリオ", sans-serif !important;
+                        }
+                        table {
+                            width: 100% !important;
+                            border-collapse: collapse !important;
+                        }
+                        th, td {
+                            border: 1px solid #ddd !important;
+                            padding: 8px !important;
+                        }
+                    }
+                </style>
+                
+                <!-- 印刷ボタン -->
+                <button onclick="window.print()" style="
+                    margin: 10px 0;
+                    padding: 8px 16px;
+                    background-color: #f0f2f6;
+                    border: 1px solid #ddd;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-family: sans-serif;
+                ">
+                    印刷する
+                </button>
             """, unsafe_allow_html=True)
             
             unique_names = df['name'].unique().tolist()
@@ -303,9 +340,13 @@ def main():
                 with tabs[i]:
                     person_data = df[df['name'] == name].copy()
                     
-                    # タイトル表示を修正
+                    # タイトル表示を修正（フォント指定を追加）
                     st.markdown(f"""
-                        <h4 style='margin: 20px 0; color: #333;'>
+                        <h4 style='
+                            margin: 20px 0;
+                            color: #333;
+                            font-family: "Hiragino Kaku Gothic Pro", "ヒラギノ角ゴ Pro W3", Meiryo, "メイリオ", sans-serif;
+                        '>
                             {name}様　2025年1月　交通費清算額
                         </h4>
                     """, unsafe_allow_html=True)
@@ -393,7 +434,15 @@ def main():
                     # Noneと空文字の処理
                     display_df = display_df.fillna('')
                     
-                    # データフレーム表示
+                    # データフレーム表示（フォント指定を追加）
+                    st.markdown("""
+                        <style>
+                            .dataframe {
+                                font-family: "Hiragino Kaku Gothic Pro", "ヒラギノ角ゴ Pro W3", Meiryo, "メイリオ", sans-serif !important;
+                            }
+                        </style>
+                    """, unsafe_allow_html=True)
+                    
                     st.dataframe(
                         display_df,
                         column_config=expense_column_config,
@@ -401,12 +450,31 @@ def main():
                         hide_index=True
                     )
                     
-                    # 注釈表示
+                    # 注釈表示（フォント指定を追加）
                     st.markdown("""
-                        <div style='margin-top: 15px; color: #666;'>
+                        <div style='
+                            margin-top: 15px;
+                            color: #666;
+                            font-family: "Hiragino Kaku Gothic Pro", "ヒラギノ角ゴ Pro W3", Meiryo, "メイリオ", sans-serif;
+                        '>
                             ※2025年1月分給与にて清算しました。
                         </div>
                     """, unsafe_allow_html=True)
+                    
+                    # 画像保存ボタン
+                    if st.button('画像として保存', key=f'save_image_{name}'):
+                        # ここで画像として保存する処理を実装
+                        st.markdown("""
+                            <script>
+                                // 画面をキャプチャしてPNG画像として保存
+                                html2canvas(document.querySelector('.stApp')).then(canvas => {
+                                    var link = document.createElement('a');
+                                    link.download = '精算書.png';
+                                    link.href = canvas.toDataURL();
+                                    link.click();
+                                });
+                            </script>
+                        """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
