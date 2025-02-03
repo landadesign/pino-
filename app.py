@@ -180,7 +180,12 @@ def main():
     st.title("PINO精算アプリケーション")
     
     # データ入力
-    input_text = st.text_area("精算データを貼り付けてください", height=200)
+    if 'input_text' not in st.session_state:
+        st.session_state.input_text = ''
+    
+    input_text = st.text_area("精算データを貼り付けてください", 
+                             value=st.session_state.input_text,
+                             height=200)
     
     col1, col2 = st.columns([1, 4])
     with col1:
@@ -190,9 +195,11 @@ def main():
             clear_button = st.button("クリア")
             if clear_button:
                 st.session_state.clear()
+                st.session_state.input_text = ''  # 入力欄もクリア
                 st.rerun()
     
     if analyze_button and input_text:
+        st.session_state.input_text = input_text  # 入力テキストを保存
         df = parse_expense_data(input_text)
         if df is not None:
             st.session_state['expense_data'] = df
@@ -219,7 +226,15 @@ def main():
         
         # DataFrameを作成し、日付でソート
         list_df = pd.DataFrame(list_data)
-        list_df = list_df.sort_values(['担当者', '日付'])
+        
+        # 日付を数値化してソート
+        def date_to_sortable(date_str):
+            month, day = map(int, date_str.split('/'))
+            return month * 100 + day
+            
+        list_df['sort_date'] = list_df['日付'].apply(date_to_sortable)
+        list_df = list_df.sort_values('sort_date', ascending=True)
+        list_df = list_df.drop('sort_date', axis=1)
         
         # カラム幅の設定
         column_config = {
