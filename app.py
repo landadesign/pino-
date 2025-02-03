@@ -307,57 +307,20 @@ def main():
                 </button>
             """, unsafe_allow_html=True)
             
-            unique_names = df['name'].unique().tolist()
+            # タブの作成
+            unique_names = sorted(df['name'].unique())
             tabs = st.tabs(unique_names)
             
-            # 精算書用のカラム設定
-            expense_column_config = {
-                '日付': st.column_config.Column(
-                    width=100,
-                    help="日付"
-                ),
-                '経路': st.column_config.Column(
-                    width=520,
-                    help="移動経路"
-                ),
-                '合計\n距離\n(km)': st.column_config.NumberColumn(
-                    width=110,
-                    format="%.1f",
-                    help="移動距離の合計"
-                ),
-                '交通費\n(距離×15P)\n(円)': st.column_config.Column(
-                    width=160,
-                    help="距離×15円"
-                ),
-                '運転\n手当\n(円)': st.column_config.Column(
-                    width=110,
-                    help="運転手当"
-                ),
-                '合計\n(円)': st.column_config.Column(
-                    width=120,
-                    help="交通費と手当の合計"
-                )
-            }
-            
+            # 担当者ごとの精算書表示
             for i, name in enumerate(unique_names):
                 with tabs[i]:
                     person_data = df[df['name'] == name].sort_values('date').copy()
-                    
-                    # デバッグ出力
-                    st.write("=== データ読み取りの確認 ===")
-                    for _, row in person_data.iterrows():
-                        st.write(f"日付: {row.get('date', '')}")
-                        st.write(f"名前: {row.get('name', '')}")
-                        for route in row['routes']:
-                            st.write("元の経路テキスト:")
-                            st.code(route['route'])  # 改行を含む生のテキストを表示
-                            st.write("---")
-                    
                     display_rows = []
                     
                     for _, row in person_data.iterrows():
                         routes = row['routes']
                         
+                        # 各経路データの処理
                         for route in routes:
                             route_text = route['route']
                             
@@ -370,63 +333,57 @@ def main():
                                 if unit in full_text:
                                     parts = full_text.split(unit)
                                     try:
-                                        # 最後の数値を距離として抽出
                                         nums = [word.strip() for word in parts[0].split() if word.strip().replace('.', '').isdigit()]
                                         if nums:
                                             distance = float(nums[-1])
-                                            # 距離部分を除いた経路テキスト
                                             route_text = full_text.replace(f"{distance}{unit}", '').strip()
-                                            route['route'] = route_text
-                                            route['distance'] = distance
                                             break
                                     except ValueError:
                                         continue
                             
-                            # 距離が見つからない場合は空文字列を設定
-                            if not distance:
-                                route['distance'] = ''
-                                route['route'] = full_text
-                            
                             # 行データの作成（空の値は空文字列として設定）
                             row_data = {
                                 '日付': row.get('date', ''),
-                                '経路': route['route'],
-                                '合計\n距離\n(km)': route['distance'] if route['distance'] else '',
-                                '交通費\n(距離×15P)\n(円)': f"{int(route['distance'] * 15):>8,}" if route['distance'] else '',
-                                '運転\n手当\n(円)': f"{200:>6,}" if route['distance'] else '',
-                                '合計\n(円)': f"{int(route['distance'] * 15 + 200):>6,}" if route['distance'] else ''
+                                '経路': route_text,
+                                '合計\n距離\n(km)': distance if distance else '',
+                                '交通費\n(距離×15P)\n(円)': f"{int(distance * 15):>8,}" if distance else '',
+                                '運転\n手当\n(円)': f"{200:>6,}" if distance else '',
+                                '合計\n(円)': f"{int(distance * 15 + 200):>6,}" if distance else ''
                             }
                             display_rows.append(row_data)
                     
                     # DataFrameの作成
                     display_df = pd.DataFrame(display_rows)
                     
-                    # 合計を計算
-                    total_distance = display_df['合計\n距離\n(km)'].sum()
-                    total_transportation = sum(int(x.replace(',', '').strip()) for x in display_df['交通費\n(距離×15P)\n(円)'])
-                    total_allowance = sum(int(x.replace(',', '').strip()) for x in display_df['運転\n手当\n(円)'])
-                    total_amount = total_transportation + total_allowance
-                    
                     # 合計行の追加
-                    totals = pd.DataFrame([{
-                        '日付': '合計',
-                        '経路': '',
-                        '合計\n距離\n(km)': total_distance,
-                        '交通費\n(距離×15P)\n(円)': f"{total_transportation:>8,}",
-                        '運転\n手当\n(円)': f"{total_allowance:>6,}",
-                        '合計\n(円)': f"{total_amount:>6,}"
-                    }])
-                    
-                    # DataFrameを結合
-                    display_df = pd.concat([display_df, totals])
-                    
-                    # 空文字の処理
-                    display_df = display_df.fillna('')
+                    if not display_df.empty:
+                        total_distance = display_df['合計\n距離\n(km)'].sum()
+                        total_transport = total_distance * 15
+                        total_allowance = len(display_df) * 200
+                        total_amount = total_transport + total_allowance
+                        
+                        totals = pd.DataFrame([{
+                            '日付': '合計',
+                            '経路': '',
+                            '合計\n距離\n(km)': total_distance,
+                            '交通費\n(距離×15P)\n(円)': f"{int(total_transport):>8,}",
+                            '運転\n手当\n(円)': f"{int(total_allowance):>6,}",
+                            '合計\n(円)': f"{int(total_amount):>6,}"
+                        }])
+                        
+                        display_df = pd.concat([display_df, totals])
                     
                     # データフレーム表示
                     st.dataframe(
                         display_df,
-                        column_config=expense_column_config,
+                        column_config={
+                            '日付': st.column_config.TextColumn('日付', width=100),
+                            '経路': st.column_config.TextColumn('経路', width=400),
+                            '合計\n距離\n(km)': st.column_config.NumberColumn('合計\n距離\n(km)', format="%.1f", width=100),
+                            '交通費\n(距離×15P)\n(円)': st.column_config.TextColumn('交通費\n(距離×15P)\n(円)', width=150),
+                            '運転\n手当\n(円)': st.column_config.TextColumn('運転\n手当\n(円)', width=100),
+                            '合計\n(円)': st.column_config.TextColumn('合計\n(円)', width=100)
+                        },
                         use_container_width=False,
                         hide_index=True
                     )
