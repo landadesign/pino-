@@ -271,7 +271,9 @@ def main():
                     width='small'
                 ),
                 '経路': st.column_config.Column(
-                    width=400
+                    width=500,
+                    help="経路情報（2行で表示）",
+                    max_chars=100  # 長い文字列を許可
                 ),
                 '合計距離(km)': st.column_config.Column(
                     width='medium'
@@ -298,6 +300,16 @@ def main():
                     display_rows = []
                     for _, row in person_data.iterrows():
                         for route in row['routes']:
+                            # 経路を2段に分割（40文字で改行）
+                            route_text = route['route']
+                            if len(route_text) > 40:
+                                # 矢印（→）の位置で分割を試みる
+                                arrows = [i for i, char in enumerate(route_text) if char == '→']
+                                if arrows:
+                                    # 最も40に近い矢印の位置で分割
+                                    split_point = min(arrows, key=lambda x: abs(x - 40))
+                                    route_text = route_text[:split_point+1] + '\n' + route_text[split_point+1:]
+                            
                             # 数値を見やすく整形
                             if route == row['routes'][0]:
                                 distance = f"{row['total_distance']:.1f}"
@@ -312,7 +324,7 @@ def main():
                             
                             row_data = {
                                 '日付': row['date'],
-                                '経路': route['route'],
+                                '経路': route_text,
                                 '合計距離(km)': distance,
                                 '交通費（距離×15P）(円)': transportation_fee,
                                 '運転手当(円)': allowance,
