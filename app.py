@@ -268,24 +268,24 @@ def main():
             # 精算書用のカラム設定
             expense_column_config = {
                 '日付': st.column_config.TextColumn(
-                    width='small'
+                    width=80
                 ),
                 '経路': st.column_config.TextColumn(
-                    width=500,
+                    width=450,
                     help="経路情報"
                 ),
                 '合計距離(km)': st.column_config.NumberColumn(
-                    width='medium',
+                    width=100,
                     format="%.1f"
                 ),
                 '交通費（距離×15P）(円)': st.column_config.TextColumn(
-                    width='medium'
+                    width=150
                 ),
                 '運転手当(円)': st.column_config.TextColumn(
-                    width='medium'
+                    width=120
                 ),
                 '合計(円)': st.column_config.TextColumn(
-                    width='medium'
+                    width=120
                 )
             }
             
@@ -300,17 +300,17 @@ def main():
                     display_rows = []
                     for _, row in person_data.iterrows():
                         for route in row['routes']:
-                            # 経路を2段に分割（40文字で改行）
+                            # 経路を2段に分割
                             route_text = route['route']
-                            if len(route_text) > 40:
+                            if len(route_text) > 35:  # 35文字を目安に改行
                                 parts = route_text.split('→')
                                 new_text = []
                                 current_line = ''
                                 
                                 for i, part in enumerate(parts):
                                     if i > 0:
-                                        if len(current_line) + len(part) + 1 > 40:
-                                            new_text.append(current_line)
+                                        if len(current_line) + len(part) + 1 > 35:
+                                            new_text.append(current_line.strip())
                                             current_line = '→' + part
                                         else:
                                             current_line += '→' + part
@@ -318,12 +318,12 @@ def main():
                                         current_line = part
                                 
                                 if current_line:
-                                    new_text.append(current_line)
+                                    new_text.append(current_line.strip())
                                 route_text = '\n'.join(new_text)
                             
                             # 数値を見やすく整形
                             if route == row['routes'][0]:
-                                distance = f"{row['total_distance']:.1f}"
+                                distance = row['total_distance']  # NumberColumnで自動フォーマット
                                 transportation_fee = f"{int(row['transportation_fee']):,}"
                                 allowance = f"{int(row['allowance']):,}"
                                 total = f"{int(row['total']):,}"
@@ -336,7 +336,7 @@ def main():
                             row_data = {
                                 '日付': row['date'],
                                 '経路': route_text,
-                                '合計距離(km)': distance,
+                                '合計距離(km)': distance if distance != '' else None,  # 空の場合はNone
                                 '交通費（距離×15P）(円)': transportation_fee,
                                 '運転手当(円)': allowance,
                                 '合計(円)': total
@@ -351,7 +351,7 @@ def main():
                     totals = pd.DataFrame([{
                         '日付': '合計',
                         '経路': '',
-                        '合計距離(km)': '',
+                        '合計距離(km)': None,
                         '交通費（距離×15P）(円)': '',
                         '運転手当(円)': '',
                         '合計(円)': f"{total_amount:,}"
@@ -360,14 +360,15 @@ def main():
                     # DataFrameを結合
                     display_df = pd.concat([display_df, totals])
                     
-                    # Noneを空文字に置換
-                    display_df = display_df.replace({None: '', 'None': '', float('nan'): ''})
+                    # Noneと空文字の処理
+                    display_df = display_df.fillna('')
+                    display_df = display_df.replace('None', '')
                     
                     # データフレーム表示
                     st.dataframe(
                         display_df,
                         column_config=expense_column_config,
-                        use_container_width=True,
+                        use_container_width=False,  # 固定幅で表示
                         hide_index=True
                     )
                     
