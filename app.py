@@ -4,6 +4,7 @@ from datetime import datetime
 import io
 from PIL import Image, ImageDraw, ImageFont
 import re
+import plotly.graph_objects as go
 
 # ページ設定を最初に行う
 st.set_page_config(layout="wide")
@@ -265,43 +266,6 @@ def main():
                 <h3 style='margin-bottom: 20px; padding: 10px; background-color: #f0f2f6; border-radius: 5px;'>
                     担当者別精算書
                 </h3>
-                
-                <!-- 印刷用スタイル -->
-                <style>
-                    @media print {
-                        .stApp > header, .stApp > footer, 
-                        .stToolbar, .stSidebar, .stStatusWidget {
-                            display: none !important;
-                        }
-                        .main > div {
-                            padding: 0 !important;
-                        }
-                        body {
-                            font-family: "Hiragino Kaku Gothic Pro", "ヒラギノ角ゴ Pro W3", Meiryo, "メイリオ", sans-serif !important;
-                        }
-                        table {
-                            width: 100% !important;
-                            border-collapse: collapse !important;
-                        }
-                        th, td {
-                            border: 1px solid #ddd !important;
-                            padding: 8px !important;
-                        }
-                    }
-                </style>
-                
-                <!-- 印刷ボタン -->
-                <button onclick="window.print()" style="
-                    margin: 10px 0;
-                    padding: 8px 16px;
-                    background-color: #f0f2f6;
-                    border: 1px solid #ddd;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    font-family: sans-serif;
-                ">
-                    印刷する
-                </button>
             """, unsafe_allow_html=True)
             
             unique_names = df['name'].unique().tolist()
@@ -340,14 +304,11 @@ def main():
                 with tabs[i]:
                     person_data = df[df['name'] == name].copy()
                     
-                    # タイトル表示を修正（フォント指定を追加）
+                    # タイトル表示
+                    title_text = f"{name}様　2025年1月　交通費清算額"
                     st.markdown(f"""
-                        <h4 style='
-                            margin: 20px 0;
-                            color: #333;
-                            font-family: "Hiragino Kaku Gothic Pro", "ヒラギノ角ゴ Pro W3", Meiryo, "メイリオ", sans-serif;
-                        '>
-                            {name}様　2025年1月　交通費清算額
+                        <h4 style='margin: 20px 0; color: #333;'>
+                            {title_text}
                         </h4>
                     """, unsafe_allow_html=True)
                     
@@ -434,15 +395,32 @@ def main():
                     # Noneと空文字の処理
                     display_df = display_df.fillna('')
                     
-                    # データフレーム表示（フォント指定を追加）
-                    st.markdown("""
-                        <style>
-                            .dataframe {
-                                font-family: "Hiragino Kaku Gothic Pro", "ヒラギノ角ゴ Pro W3", Meiryo, "メイリオ", sans-serif !important;
-                            }
-                        </style>
-                    """, unsafe_allow_html=True)
+                    # テーブルをPlotlyで作成（画像保存用）
+                    fig = go.Figure(data=[go.Table(
+                        header=dict(
+                            values=list(display_df.columns),
+                            align=['center'] * len(display_df.columns),
+                            font=dict(size=12),
+                            height=40
+                        ),
+                        cells=dict(
+                            values=[display_df[col] for col in display_df.columns],
+                            align=['center' if col != '経路' else 'left' for col in display_df.columns],
+                            font=dict(size=11),
+                            height=30
+                        )
+                    )])
                     
+                    # レイアウトの設定
+                    fig.update_layout(
+                        title=title_text,
+                        title_font=dict(size=16),
+                        width=1100,
+                        height=len(display_df) * 40 + 150,
+                        margin=dict(t=80, b=20, l=20, r=20)
+                    )
+                    
+                    # 通常のデータフレーム表示
                     st.dataframe(
                         display_df,
                         column_config=expense_column_config,
@@ -450,31 +428,25 @@ def main():
                         hide_index=True
                     )
                     
-                    # 注釈表示（フォント指定を追加）
+                    # 注釈表示
                     st.markdown("""
-                        <div style='
-                            margin-top: 15px;
-                            color: #666;
-                            font-family: "Hiragino Kaku Gothic Pro", "ヒラギノ角ゴ Pro W3", Meiryo, "メイリオ", sans-serif;
-                        '>
+                        <div style='margin-top: 15px; color: #666;'>
                             ※2025年1月分給与にて清算しました。
                         </div>
                     """, unsafe_allow_html=True)
                     
                     # 画像保存ボタン
-                    if st.button('画像として保存', key=f'save_image_{name}'):
-                        # ここで画像として保存する処理を実装
-                        st.markdown("""
-                            <script>
-                                // 画面をキャプチャしてPNG画像として保存
-                                html2canvas(document.querySelector('.stApp')).then(canvas => {
-                                    var link = document.createElement('a');
-                                    link.download = '精算書.png';
-                                    link.href = canvas.toDataURL();
-                                    link.click();
-                                });
-                            </script>
-                        """, unsafe_allow_html=True)
+                    if st.button('精算書を画像として保存', key=f'save_image_{name}'):
+                        # 画像として保存
+                        img_bytes = fig.to_image(format="png", scale=2)
+                        
+                        # ダウンロードボタンを表示
+                        st.download_button(
+                            label="画像をダウンロード",
+                            data=img_bytes,
+                            file_name=f"{name}様_交通費精算書_2025年1月.png",
+                            mime="image/png"
+                        )
 
 if __name__ == "__main__":
     main()
