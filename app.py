@@ -196,7 +196,6 @@ def main():
         df = parse_expense_data(input_text)
         if df is not None:
             st.session_state['expense_data'] = df
-            st.session_state['show_expense_report'] = False
             st.success("データを解析しました！")
     
     # データ表示と精算書生成
@@ -208,19 +207,21 @@ def main():
         
         # 一覧表示用のデータを作成
         list_data = []
-        entry_id = 1
         for _, row in df.iterrows():
+            # 各経路を別々の行として追加
             for route in row['routes']:
                 list_data.append({
-                    'No.': entry_id,
                     '日付': row['date'],
                     '担当者': row['name'],
                     '経路': route['route'],
                     '距離(km)': route['distance']
                 })
-                entry_id += 1
         
+        # DataFrameを作成し、日付でソート
         list_df = pd.DataFrame(list_data)
+        list_df = list_df.sort_values(['担当者', '日付'])
+        
+        # データフレーム表示
         st.dataframe(
             list_df.style.format({
                 '距離(km)': '{:.1f}'
@@ -249,6 +250,7 @@ def main():
                     # データ表示用のリストを作成
                     display_rows = []
                     for _, row in person_data.iterrows():
+                        # 各経路を別々の行として追加
                         for route in row['routes']:
                             display_rows.append({
                                 '日付': row['date'],
@@ -287,7 +289,6 @@ def main():
                     
                     # 注釈表示
                     st.markdown("※2025年1月分給与にて清算しました。")
-                    st.markdown(f"計算日時: {datetime.now().strftime('%Y/%m/%d')}")
 
 if __name__ == "__main__":
     main()
