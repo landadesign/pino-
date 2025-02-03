@@ -255,15 +255,6 @@ def main():
             hide_index=True
         )
         
-        # デバッグ用の出力
-        st.write("データの確認:")
-        for _, row in df.iterrows():
-            if row['date'] == '1/31' and row['name'] == '山名夏生':
-                st.write("日付:", row['date'])
-                st.write("名前:", row['name'])
-                st.write("経路データ:", row['routes'])
-                st.write("---")
-        
         # 精算書作成ボタン
         if st.button("精算書を作成"):
             st.session_state['show_expense_report'] = True
@@ -352,11 +343,11 @@ def main():
                             }
                             display_rows.append(row_data)
                     
-                    # DataFrameの作成
-                    display_df = pd.DataFrame(display_rows)
-                    
-                    # 合計行の追加（空の値は空文字列として設定）
-                    if not display_df.empty:
+                    # DataFrameの作成と表示
+                    if display_rows:
+                        display_df = pd.DataFrame(display_rows)
+                        
+                        # 合計行の追加
                         total_distance = display_df['合計\n距離\n(km)'].sum()
                         total_transport = total_distance * 15
                         total_allowance = len(display_df) * 200
@@ -365,28 +356,28 @@ def main():
                         totals = pd.DataFrame([{
                             '日付': '合計',
                             '経路': '',
-                            '合計\n距離\n(km)': total_distance if total_distance else '',
-                            '交通費\n(距離×15P)\n(円)': f"{int(total_transport):>8,}" if total_transport else '',
-                            '運転\n手当\n(円)': f"{int(total_allowance):>6,}" if total_allowance else '',
-                            '合計\n(円)': f"{int(total_amount):>6,}" if total_amount else ''
+                            '合計\n距離\n(km)': total_distance,
+                            '交通費\n(距離×15P)\n(円)': f"{int(total_transport):>8,}",
+                            '運転\n手当\n(円)': f"{int(total_allowance):>6,}",
+                            '合計\n(円)': f"{int(total_amount):>6,}"
                         }])
                         
                         display_df = pd.concat([display_df, totals])
-                    
-                    # データフレーム表示
-                    st.dataframe(
-                        display_df,
-                        column_config={
-                            '日付': st.column_config.TextColumn('日付', width=100),
-                            '経路': st.column_config.TextColumn('経路', width=400),
-                            '合計\n距離\n(km)': st.column_config.NumberColumn('合計\n距離\n(km)', format="%.1f", width=100),
-                            '交通費\n(距離×15P)\n(円)': st.column_config.TextColumn('交通費\n(距離×15P)\n(円)', width=150),
-                            '運転\n手当\n(円)': st.column_config.TextColumn('運転\n手当\n(円)', width=100),
-                            '合計\n(円)': st.column_config.TextColumn('合計\n(円)', width=100)
-                        },
-                        use_container_width=False,
-                        hide_index=True
-                    )
+                        
+                        # データフレーム表示
+                        st.dataframe(
+                            display_df,
+                            column_config={
+                                '日付': st.column_config.TextColumn('日付', width=100),
+                                '経路': st.column_config.TextColumn('経路', width=400),
+                                '合計\n距離\n(km)': st.column_config.NumberColumn('合計\n距離\n(km)', format="%.1f", width=100),
+                                '交通費\n(距離×15P)\n(円)': st.column_config.TextColumn('交通費\n(距離×15P)\n(円)', width=150),
+                                '運転\n手当\n(円)': st.column_config.TextColumn('運転\n手当\n(円)', width=100),
+                                '合計\n(円)': st.column_config.TextColumn('合計\n(円)', width=100)
+                            },
+                            use_container_width=False,
+                            hide_index=True
+                        )
                     
                     # 注釈表示
                     st.markdown("""
