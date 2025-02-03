@@ -355,7 +355,7 @@ def main():
                     # DataFrameの作成
                     display_df = pd.DataFrame(display_rows)
                     
-                    # 合計行の追加
+                    # 合計行の追加（空の値は空文字列として設定）
                     if not display_df.empty:
                         total_distance = display_df['合計\n距離\n(km)'].sum()
                         total_transport = total_distance * 15
@@ -365,10 +365,10 @@ def main():
                         totals = pd.DataFrame([{
                             '日付': '合計',
                             '経路': '',
-                            '合計\n距離\n(km)': total_distance,
-                            '交通費\n(距離×15P)\n(円)': f"{int(total_transport):>8,}",
-                            '運転\n手当\n(円)': f"{int(total_allowance):>6,}",
-                            '合計\n(円)': f"{int(total_amount):>6,}"
+                            '合計\n距離\n(km)': total_distance if total_distance else '',
+                            '交通費\n(距離×15P)\n(円)': f"{int(total_transport):>8,}" if total_transport else '',
+                            '運転\n手当\n(円)': f"{int(total_allowance):>6,}" if total_allowance else '',
+                            '合計\n(円)': f"{int(total_amount):>6,}" if total_amount else ''
                         }])
                         
                         display_df = pd.concat([display_df, totals])
