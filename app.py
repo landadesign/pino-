@@ -302,7 +302,7 @@ def main():
                         for route in row['routes']:
                             # 経路を2段に分割
                             route_text = route['route']
-                            if len(route_text) > 35:  # 35文字を目安に改行
+                            if len(route_text) > 35:
                                 parts = route_text.split('→')
                                 new_text = []
                                 current_line = ''
@@ -319,11 +319,19 @@ def main():
                                 
                                 if current_line:
                                     new_text.append(current_line.strip())
+                                    current_line = '→' + part
+                                else:
+                                    current_line = part
+                                
+                                if current_line:
+                                    new_text.append(current_line.strip())
+                                    current_line = part
+                                
                                 route_text = '\n'.join(new_text)
                             
                             # 数値を見やすく整形
                             if route == row['routes'][0]:
-                                distance = row['total_distance']  # NumberColumnで自動フォーマット
+                                distance = row['total_distance']
                                 transportation_fee = f"{int(row['transportation_fee']):,}"
                                 allowance = f"{int(row['allowance']):,}"
                                 total = f"{int(row['total']):,}"
@@ -336,7 +344,7 @@ def main():
                             row_data = {
                                 '日付': row['date'],
                                 '経路': route_text,
-                                '合計距離(km)': distance if distance != '' else None,  # 空の場合はNone
+                                '合計距離(km)': distance if distance != '' else None,
                                 '交通費（距離×15P）(円)': transportation_fee,
                                 '運転手当(円)': allowance,
                                 '合計(円)': total
@@ -346,15 +354,20 @@ def main():
                     # DataFrameの作成
                     display_df = pd.DataFrame(display_rows)
                     
+                    # 合計を計算
+                    total_distance = person_data['total_distance'].sum()
+                    total_transportation = person_data['transportation_fee'].sum()
+                    total_allowance = person_data['allowance'].sum()
+                    total_amount = person_data['total'].sum()
+                    
                     # 合計行の追加
-                    total_amount = int(person_data['total'].sum())
                     totals = pd.DataFrame([{
                         '日付': '合計',
                         '経路': '',
-                        '合計距離(km)': None,
-                        '交通費（距離×15P）(円)': '',
-                        '運転手当(円)': '',
-                        '合計(円)': f"{total_amount:,}"
+                        '合計距離(km)': total_distance,
+                        '交通費（距離×15P）(円)': f"{int(total_transportation):,}",
+                        '運転手当(円)': f"{int(total_allowance):,}",
+                        '合計(円)': f"{int(total_amount):,}"
                     }])
                     
                     # DataFrameを結合
@@ -368,7 +381,7 @@ def main():
                     st.dataframe(
                         display_df,
                         column_config=expense_column_config,
-                        use_container_width=False,  # 固定幅で表示
+                        use_container_width=False,
                         hide_index=True
                     )
                     
