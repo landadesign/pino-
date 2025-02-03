@@ -140,9 +140,6 @@ def parse_expense_data(text):
                             'route': route,
                             'distance': distance
                         })
-                        
-                    # デバッグ情報
-                    st.write(f"解析結果: 名前={name}, 日付={date}, 経路={route}, 距離={distance}km")
         
         # 日付ごとのデータを集計
         for name, dates in daily_routes.items():
@@ -170,11 +167,6 @@ def parse_expense_data(text):
             df = df.sort_values(['name', 'date_sort'])
             df = df.drop('date_sort', axis=1)
             
-            # デバッグ情報
-            st.write("解析されたデータ件数:", len(df))
-            st.write("ユニークな名前:", df['name'].unique())
-            st.write("日付の範囲:", df['date'].min(), "から", df['date'].max())
-            
             return df
         
         st.error("データが見つかりませんでした。正しい形式で入力してください。")
@@ -182,7 +174,6 @@ def parse_expense_data(text):
         
     except Exception as e:
         st.error(f"エラーが発生しました: {str(e)}")
-        st.write("問題のある行:", line)  # エラーが発生した行を表示
         return None
 
 def main():
