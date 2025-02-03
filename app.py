@@ -305,10 +305,9 @@ def main():
                     person_data = df[df['name'] == name].copy()
                     
                     # タイトル表示
-                    title_text = f"{name}様　2025年1月　交通費清算額"
                     st.markdown(f"""
                         <h4 style='margin: 20px 0; color: #333;'>
-                            {title_text}
+                            {name}様　2025年1月　交通費清算額
                         </h4>
                     """, unsafe_allow_html=True)
                     
@@ -319,7 +318,6 @@ def main():
                         routes = row['routes']
                         
                         for idx, route in enumerate(routes):
-                            # 経路を2段に分割
                             route_text = route['route']
                             if len(route_text) > 35:
                                 parts = route_text.split('→')
@@ -395,32 +393,7 @@ def main():
                     # Noneと空文字の処理
                     display_df = display_df.fillna('')
                     
-                    # テーブルをPlotlyで作成（画像保存用）
-                    fig = go.Figure(data=[go.Table(
-                        header=dict(
-                            values=list(display_df.columns),
-                            align=['center'] * len(display_df.columns),
-                            font=dict(size=12),
-                            height=40
-                        ),
-                        cells=dict(
-                            values=[display_df[col] for col in display_df.columns],
-                            align=['center' if col != '経路' else 'left' for col in display_df.columns],
-                            font=dict(size=11),
-                            height=30
-                        )
-                    )])
-                    
-                    # レイアウトの設定
-                    fig.update_layout(
-                        title=title_text,
-                        title_font=dict(size=16),
-                        width=1100,
-                        height=len(display_df) * 40 + 150,
-                        margin=dict(t=80, b=20, l=20, r=20)
-                    )
-                    
-                    # 通常のデータフレーム表示
+                    # データフレーム表示
                     st.dataframe(
                         display_df,
                         column_config=expense_column_config,
@@ -434,19 +407,6 @@ def main():
                             ※2025年1月分給与にて清算しました。
                         </div>
                     """, unsafe_allow_html=True)
-                    
-                    # 画像保存ボタン
-                    if st.button('精算書を画像として保存', key=f'save_image_{name}'):
-                        # 画像として保存
-                        img_bytes = fig.to_image(format="png", scale=2)
-                        
-                        # ダウンロードボタンを表示
-                        st.download_button(
-                            label="画像をダウンロード",
-                            data=img_bytes,
-                            file_name=f"{name}様_交通費精算書_2025年1月.png",
-                            mime="image/png"
-                        )
 
 if __name__ == "__main__":
     main()
