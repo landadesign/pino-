@@ -267,24 +267,24 @@ def main():
             
             # 精算書用のカラム設定
             expense_column_config = {
-                '日付': st.column_config.Column(
+                '日付': st.column_config.TextColumn(
                     width='small'
                 ),
-                '経路': st.column_config.Column(
+                '経路': st.column_config.TextColumn(
                     width=500,
-                    help="経路情報（2行で表示）",
-                    max_chars=100  # 長い文字列を許可
+                    help="経路情報"
                 ),
-                '合計距離(km)': st.column_config.Column(
+                '合計距離(km)': st.column_config.NumberColumn(
+                    width='medium',
+                    format="%.1f"
+                ),
+                '交通費（距離×15P）(円)': st.column_config.TextColumn(
                     width='medium'
                 ),
-                '交通費（距離×15P）(円)': st.column_config.Column(
+                '運転手当(円)': st.column_config.TextColumn(
                     width='medium'
                 ),
-                '運転手当(円)': st.column_config.Column(
-                    width='medium'
-                ),
-                '合計(円)': st.column_config.Column(
+                '合計(円)': st.column_config.TextColumn(
                     width='medium'
                 )
             }
@@ -303,12 +303,23 @@ def main():
                             # 経路を2段に分割（40文字で改行）
                             route_text = route['route']
                             if len(route_text) > 40:
-                                # 矢印（→）の位置で分割を試みる
-                                arrows = [i for i, char in enumerate(route_text) if char == '→']
-                                if arrows:
-                                    # 最も40に近い矢印の位置で分割
-                                    split_point = min(arrows, key=lambda x: abs(x - 40))
-                                    route_text = route_text[:split_point+1] + '\n' + route_text[split_point+1:]
+                                parts = route_text.split('→')
+                                new_text = []
+                                current_line = ''
+                                
+                                for i, part in enumerate(parts):
+                                    if i > 0:
+                                        if len(current_line) + len(part) + 1 > 40:
+                                            new_text.append(current_line)
+                                            current_line = '→' + part
+                                        else:
+                                            current_line += '→' + part
+                                    else:
+                                        current_line = part
+                                
+                                if current_line:
+                                    new_text.append(current_line)
+                                route_text = '\n'.join(new_text)
                             
                             # 数値を見やすく整形
                             if route == row['routes'][0]:
@@ -352,17 +363,9 @@ def main():
                     # Noneを空文字に置換
                     display_df = display_df.replace({None: '', 'None': '', float('nan'): ''})
                     
-                    # 数値列のスタイルを設定
-                    styled_df = display_df.style.format({
-                        '合計距離(km)': lambda x: f"{x:>10}" if x else "",
-                        '交通費（距離×15P）(円)': lambda x: f"{x:>12}" if x else "",
-                        '運転手当(円)': lambda x: f"{x:>10}" if x else "",
-                        '合計(円)': lambda x: f"{x:>10}" if x else ""
-                    })
-                    
                     # データフレーム表示
                     st.dataframe(
-                        styled_df,
+                        display_df,
                         column_config=expense_column_config,
                         use_container_width=True,
                         hide_index=True
