@@ -265,6 +265,37 @@ def main():
                 <h3 style='margin-bottom: 20px; padding: 10px; background-color: #f0f2f6; border-radius: 5px;'>
                     担当者別精算書
                 </h3>
+                
+                <!-- 印刷用スタイル -->
+                <style>
+                    @media print {
+                        .stApp > header, .stApp > footer,
+                        .stToolbar, .stSidebar, button, .stStatusWidget {
+                            display: none !important;
+                        }
+                        .main > div {
+                            padding: 0 !important;
+                        }
+                        .element-container {
+                            break-inside: avoid;
+                        }
+                        @page {
+                            margin: 1cm;
+                        }
+                    }
+                </style>
+                
+                <!-- 印刷ボタン -->
+                <button onclick="window.print()" style="
+                    margin: 10px 0;
+                    padding: 8px 16px;
+                    background-color: #f0f2f6;
+                    border: 1px solid #ddd;
+                    border-radius: 4px;
+                    cursor: pointer;
+                ">
+                    一括印刷
+                </button>
             """, unsafe_allow_html=True)
             
             unique_names = df['name'].unique().tolist()
