@@ -271,7 +271,7 @@ def main():
                     width='small'
                 ),
                 '経路': st.column_config.Column(
-                    width=400  # 経路欄を大きく
+                    width=400
                 ),
                 '合計距離(km)': st.column_config.NumberColumn(
                     width='medium',
@@ -300,13 +300,19 @@ def main():
                     display_rows = []
                     for _, row in person_data.iterrows():
                         for route in row['routes']:
+                            # 数値を中央寄せした文字列として整形
+                            transportation_fee = f"{int(row['transportation_fee']):^12,}" if route == row['routes'][0] else ''
+                            allowance = f"{int(row['allowance']):^8,}" if route == row['routes'][0] else ''
+                            total = f"{int(row['total']):^8,}" if route == row['routes'][0] else ''
+                            distance = row['total_distance'] if route == row['routes'][0] else ''
+                            
                             row_data = {
                                 '日付': row['date'],
                                 '経路': route['route'],
-                                '合計距離(km)': row['total_distance'] if route == row['routes'][0] else '',
-                                '交通費（距離×15P）(円)': f"{int(row['transportation_fee']):,}" if route == row['routes'][0] else '',
-                                '運転手当(円)': f"{int(row['allowance']):,}" if route == row['routes'][0] else '',
-                                '合計(円)': f"{int(row['total']):,}" if route == row['routes'][0] else ''
+                                '合計距離(km)': distance,
+                                '交通費（距離×15P）(円)': transportation_fee,
+                                '運転手当(円)': allowance,
+                                '合計(円)': total
                             }
                             display_rows.append(row_data)
                     
@@ -321,7 +327,7 @@ def main():
                         '合計距離(km)': '',
                         '交通費（距離×15P）(円)': '',
                         '運転手当(円)': '',
-                        '合計(円)': f"{total_amount:,}"
+                        '合計(円)': f"{total_amount:^8,}"
                     }])
                     
                     # DataFrameを結合
@@ -330,14 +336,9 @@ def main():
                     # Noneを空文字に置換
                     display_df = display_df.replace({None: '', 'None': '', float('nan'): ''})
                     
-                    # スタイル適用
-                    styled_df = display_df.style.set_properties(**{
-                        'text-align': 'center'
-                    }, subset=['合計距離(km)', '交通費（距離×15P）(円)', '運転手当(円)', '合計(円)'])
-                    
                     # データフレーム表示
                     st.dataframe(
-                        styled_df,
+                        display_df,
                         column_config=expense_column_config,
                         use_container_width=True,
                         hide_index=True
