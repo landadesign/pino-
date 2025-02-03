@@ -195,11 +195,11 @@ def main():
             clear_button = st.button("クリア")
             if clear_button:
                 st.session_state.clear()
-                st.session_state.input_text = ''  # 入力欄もクリア
+                st.session_state.input_text = ''
                 st.rerun()
     
     if analyze_button and input_text:
-        st.session_state.input_text = input_text  # 入力テキストを保存
+        st.session_state.input_text = input_text
         df = parse_expense_data(input_text)
         if df is not None:
             st.session_state['expense_data'] = df
@@ -215,7 +215,6 @@ def main():
         # 一覧表示用のデータを作成
         list_data = []
         for _, row in df.iterrows():
-            # 各経路を別々の行として追加
             for route in row['routes']:
                 list_data.append({
                     '日付': row['date'],
@@ -241,12 +240,16 @@ def main():
             '日付': st.column_config.TextColumn(width='small'),
             '担当者': st.column_config.TextColumn(width='small'),
             '経路': st.column_config.TextColumn(width='large'),
-            '距離(km)': st.column_config.NumberColumn(width='small', format="%.1f")
+            '距離(km)': st.column_config.NumberColumn(
+                width='small',
+                format="%.1f",
+                help="移動距離"
+            )
         }
         
         # データフレーム表示
         st.dataframe(
-            list_df,
+            list_df.fillna(''),  # Noneを空文字に置換
             column_config=column_config,
             use_container_width=True,
             hide_index=True
@@ -266,10 +269,22 @@ def main():
             expense_column_config = {
                 '日付': st.column_config.TextColumn(width='small'),
                 '経路': st.column_config.TextColumn(width='large'),
-                '合計距離(km)': st.column_config.NumberColumn(width='small', format="%.1f"),
-                '交通費（距離×15P）(円)': st.column_config.NumberColumn(width='medium', format="%d"),
-                '運転手当(円)': st.column_config.NumberColumn(width='small', format="%d"),
-                '合計(円)': st.column_config.NumberColumn(width='small', format="%d")
+                '合計距離(km)': st.column_config.NumberColumn(
+                    width='small',
+                    format="%.1f"
+                ),
+                '交通費（距離×15P）(円)': st.column_config.NumberColumn(
+                    width='medium',
+                    format="{:,}"
+                ),
+                '運転手当(円)': st.column_config.NumberColumn(
+                    width='small',
+                    format="{:,}"
+                ),
+                '合計(円)': st.column_config.NumberColumn(
+                    width='small',
+                    format="{:,}"
+                )
             }
             
             for i, name in enumerate(unique_names):
@@ -282,7 +297,6 @@ def main():
                     # データ表示用のリストを作成
                     display_rows = []
                     for _, row in person_data.iterrows():
-                        # 各経路を別々の行として追加
                         for route in row['routes']:
                             display_rows.append({
                                 '日付': row['date'],
@@ -309,7 +323,7 @@ def main():
                     
                     # データフレーム表示
                     st.dataframe(
-                        display_df,
+                        display_df.fillna(''),  # Noneを空文字に置換
                         column_config=expense_column_config,
                         use_container_width=True,
                         hide_index=True
